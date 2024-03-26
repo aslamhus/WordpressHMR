@@ -1,5 +1,5 @@
 {
-  "name": "aslamhusain/wordpress-hmr",
+  "name": "aslamhus/wordpress-hmr",
   "description": "HMR setup with webpack and wp-scripts for wordpress development and production",
   "type": "library",
   "license": "MIT",
