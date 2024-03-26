@@ -19,7 +19,7 @@
   },
   "scripts": {
     "post-package-install": [
-      "Aslamhusain\\WordpressHMR\\Install::postPackageInstall"
+      "Aslamhus\\WordpressHMR\\Install::postPackageInstall"
     ],
     "test-install": "vendor/bin/phpunit --verbose test/TestEnqueueAssets.php"
   }
