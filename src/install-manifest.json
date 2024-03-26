@@ -1,0 +1,7 @@
+[
+  ["assets.sample.json", "resources/assets/"],
+  ["enqueue-assets.php", "resources/inc/"],
+  ["webpack.common.js", ""],
+  ["webpack.dev.js", ""],
+  ["webpack.prod.js", ""]
+]

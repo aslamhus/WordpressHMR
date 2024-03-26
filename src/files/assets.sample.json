@@ -1,0 +1,26 @@
+{
+  "config": {
+    "handlePrefix": "custom-asset",
+    "host": "local.mysite",
+    "site": "http://local.mysite:8888",
+    "port": "8888",
+    "protocol": "http",
+    "themePath": "/wp-content/themes/my-custom-theme"
+  },
+  "assets": {
+    "enqueue_block_editor_assets": [
+      {
+        "handle": "editor-js",
+        "path": "/js/editor",
+        "ext": "js"
+      }
+    ],
+    "wp_enqueue_scripts": [
+      {
+        "path": "/js/screen",
+        "ext": "js",
+        "condition": ["is_user_logged_in", null, false]
+      }
+    ]
+  }
+}

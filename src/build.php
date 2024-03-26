@@ -1,0 +1,17 @@
+<?php
+
+require_once __DIR__ . "/vendor/autoload.php";
+
+use Aslamhus\WordpressHMR\EnqueueAssets;
+
+// get assets json
+// load assets json file and return it as an associative array
+$path =  './resources/assets/assets.json';
+
+if(!file_exists($path)) {
+    throw new \Exception("assets.json does not exist at " . $path);
+}
+$jsonString = file_get_contents($path);
+$assetsJson =  json_decode($jsonString, true);
+$enqueuer = new EnqueueAssets($assetsJson);
+$enqueuer->buildAssetsFile();

@@ -1,0 +1,26 @@
+{
+  "name": "aslamhusain/wordpress-hmr",
+  "description": "HMR setup with webpack and wp-scripts for wordpress development and production",
+  "type": "library",
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "Aslamhus\\WordpressHMR\\": "src/"
+    }
+  },
+  "authors": [
+    {
+      "name": "aslamhus",
+      "email": "aslam.percy.husain@gmail.com"
+    }
+  ],
+  "require-dev": {
+    "phpunit/phpunit": "^9.6"
+  },
+  "scripts": {
+    "post-package-install": [
+      "Aslamhusain\\WordpressHMR\\Install::postPackageInstall"
+    ],
+    "test-install": "vendor/bin/phpunit --verbose test/TestEnqueueAssets.php"
+  }
+}
