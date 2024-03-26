@@ -21,6 +21,6 @@
     "post-package-install": [
       "Aslamhus\\WordpressHMR\\Install::postPackageInstall"
     ],
-    "test-install": "vendor/bin/phpunit --verbose test/TestEnqueueAssets.php"
+    "test-install": "Aslamhus\\WordpressHMR\\Install::postPackageInstall"
   }
 }

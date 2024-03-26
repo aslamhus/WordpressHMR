@@ -18,8 +18,13 @@ class Install
 {
     public static function postPackageInstall()
     {
-
-        $root = __DIR__ . '/../../';
+        echo 'installing...';
+        $root = __DIR__ . '/../../../../';
+        // check that vendor exists in the root directory
+        if (!file_exists($root . 'vendor')) {
+            echo "Vendor directory not found in the root directory. Please run composer install";
+            return;
+        }
         // create public directory and install wordpress if it does not exist
         self::createPublicDirectory($root);
         // install resources directory with latest wordpress theme
