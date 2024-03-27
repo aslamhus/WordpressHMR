@@ -35,6 +35,8 @@ class Install
         self::installManifestFiles($root);
         // install package.json or add scripts/dependencies to existing package.json
         self::installPackageJson($root);
+        // finally add enquue-assets to functions.php
+        self::addEnqueueAssetsToFunctions($root);
     }
 
     private static function createPublicDirectory($root)
@@ -132,6 +134,16 @@ class Install
             $package['scripts'] = $scripts;
             $package['devDependencies'] = $devDependencies;
             file_put_contents($root . 'package.json', json_encode($package, JSON_PRETTY_PRINT));
+        }
+    }
+
+    private static function addEnqueueAssetsToFunctions($root)
+    {
+        $functions = file_get_contents($root . 'resources/functions.php');
+        $enqueue = file_get_contents(__DIR__ . '/files/enqueue-assets.txt');
+        if (strpos($functions, $enqueue) === false) {
+            $functions = str_replace('<?php', '<?php' . $enqueue, $functions);
+            file_put_contents($root . 'resources/functions.php', $functions);
         }
     }
 }

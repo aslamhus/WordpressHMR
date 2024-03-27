@@ -39,9 +39,21 @@ the document root is the public folder of your wordpress site.
    127.0.0.1 local.mysite
    ```
 
-### Post Installation
+### Install package and setup
 
-1. After installing the package, you can find the installer.php file in the package's root directory (vendor/aslamhus/wordpress-hmr/installer.php). Move this file to the root directory of your wordpress site and run it in your browser. This will install the necessary files in your theme directory.
+1. Install the package
+
+   ```bash
+   composer require aslamhus/wordpress-hmr
+   ```
+
+2. Install `npm` dependencies. If you have not already installed `npm`, you can do so by installing `node.js`.
+
+   ```bash
+   npm install
+   ```
+
+3. After installing the package, you can find the installer.php file in the package's root directory (vendor/aslamhus/wordpress-hmr/installer.php). Move this file to the root directory of your wordpress site and run it in your browser. This will install the necessary files in your theme directory.
 
    ```bash
    mv vendor/aslamhus/wordpress-hmr/installer.php /path/to/your/wordpress-site
@@ -49,22 +61,36 @@ the document root is the public folder of your wordpress site.
 
    (Replace `/path/to/your/wordpress-site` with the path to your wordpress site.
 
-2. Spin up your server and go the local url you have chosen for your site. Wordpress' installation prompt should appear. Follow the instructions to install wordpress.
+### Post installation
 
-3. If you have difficulty connecting to the database, try specifying the port number in the `DB_HOST` constant. Make sure this is the correct port based on your MAMP/XAMPP/WAMP setup.
+1. Start `apache` server with MAMP/WAMP/XAMP.
+
+2. Start the proxy (development) server
+
+   ```bash
+   npm run start
+   ```
+
+3. Wordpress' installation prompt should appear when your proxy server opens the url. Follow the instructions to install wordpress.
+
+### Troubleshooting the setup
+
+1. If you have difficulty connecting to the database, try specifying the port number in the `DB_HOST` constant. Make sure this is the correct port based on your MAMP/XAMPP/WAMP setup.
 
    ```php
    /** Database hostname */
    define( 'DB_HOST', '127.0.0.1:8889' );
    ```
 
-4. Set your config env to development
+2. Set your config env to development
 
    ```php
    define( 'WP_ENVIRONMENT_TYPE', 'development' )
    ```
 
-5. Change the assets.sample.json to assets.json and set up the config values for your local environment.
+### Add assets to your theme
+
+1. Change the assets.sample.json to assets.json and set up the config values for your local environment.
 
    ```json
    {
@@ -79,15 +105,9 @@ the document root is the public folder of your wordpress site.
    }
    ```
 
-6. Add any scripts you'd like to include in the `assets` property of the assets.json file. assets.sample.json provides explample scripts.
+2. Add any scripts you'd like to include in the `assets` property of the assets.json file. assets.sample.json provides explample scripts.
 
-7. Create a child theme in the resources folder of your project. This is where you will be developing your theme.Make sure not to replace `enqueue-assets.php` and `assets.json` files in the child theme.
-
-8. Install `npm` dependencies. If you have not already installed `npm`, you can do so by installing `node.js`.
-
-   ```bash
-   npm install
-   ```
+3. Activate the theme in your wordpress site.
 
 ### Setup the theme
 
