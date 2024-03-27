@@ -151,7 +151,7 @@ class Install
         $functions = file_get_contents($functionsPath);
         $enqueueLine = "/** Enqueue Custom Theme Assets */ " . PHP_EOL . "require_once get_template_directory() . '/inc/enqueue-assets.php';";
         if (strpos($functions, $enqueueLine) === false) {
-            file_put_contents($functionsPath, $functions . PHP_EOL . $enqueueLine, FILE_APPEND | LOCK_EX);
+            file_put_contents($functionsPath, $functions . PHP_EOL . $enqueueLine);
         }
     }
 }
