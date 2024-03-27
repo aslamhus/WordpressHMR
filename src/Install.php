@@ -140,9 +140,10 @@ class Install
     private static function addEnqueueAssetsToFunctions($root)
     {
         $functions = file_get_contents($root . 'resources/functions.php');
-        $enqueue = file_get_contents(__DIR__ . '/files/enqueue-assets.txt');
-        if (strpos($functions, $enqueue) === false) {
-            $functions = str_replace('<?php', '<?php' . $enqueue, $functions);
+        $enqueueLine = "/** Enqueue Custom Theme Assets */
+        require_once get_template_directory() . '/inc/enqueue-assets.php';";
+        if (strpos($functions, $enqueueLine) === false) {
+            $functions = str_replace('<?php', '<?php' . $enqueueLine, $functions);
             file_put_contents($root . 'resources/functions.php', $functions);
         }
     }
