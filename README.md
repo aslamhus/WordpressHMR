@@ -83,6 +83,12 @@ the document root is the public folder of your wordpress site.
 
 7. Create a child theme in the resources folder of your project. This is where you will be developing your theme.Make sure not to replace `enqueue-assets.php` and `assets.json` files in the child theme.
 
+8. Install `npm` dependencies. If you have not already installed `npm`, you can do so by installing `node.js`.
+
+   ```bash
+   npm install
+   ```
+
 ### Setup the theme
 
 Login into your wordpress site and activate your custom theme.

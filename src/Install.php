@@ -33,6 +33,8 @@ class Install
         self::copyWordpressChildThemeToResources($root);
         // Install files based on the install-manifest.json
         self::installManifestFiles($root);
+        // install package.json or add scripts/dependencies to existing package.json
+        self::installPackageJson($root);
     }
 
     private static function createPublicDirectory($root)
@@ -113,6 +115,23 @@ class Install
                 echo "File already exists: $destination \n\n";
             }
 
+        }
+    }
+
+    private static function installPackageJson($root)
+    {
+        // check if package.json exists
+        if (!file_exists($root . 'package.json')) {
+            // copy package.json from the package
+            copy(__DIR__ . '/files/package.json', $root . 'package.json');
+        } else {
+            // add scripts and dependencies to existing package.json
+            $package = json_decode(file_get_contents($root . 'package.json'), true);
+            $scripts = json_decode(file_get_contents(__DIR__ . '/files/package.json'), true)['scripts'];
+            $devDependencies = json_decode(file_get_contents(__DIR__ . '/files/package.json'), true)['devDependencies'];
+            $package['scripts'] = $scripts;
+            $package['devDependencies'] = $devDependencies;
+            file_put_contents($root . 'package.json', json_encode($package, JSON_PRETTY_PRINT));
         }
     }
 }
