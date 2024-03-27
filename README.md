@@ -92,7 +92,7 @@ Once you have completed the pre-installation instructions above, you are ready t
    composer require aslamhus/wordpress-hmr
    ```
 
-2. Run the installer script. You can find installer.php file in the package's root directory (vendor/aslamhus/wordpress-hmr/installer.php). Move this file to the root directory of your wordpress site and run it on the command line. This will install the necessary files in your theme directory.
+2. Run the installer script. You can find installer.php file in the package's root directory (vendor/aslamhus/wordpress-hmr/installer.php). Move this file to the root directory of your wordpress site and run it on the command line. This will install the necessary files in your theme directory as well as the wepback configuration files.
 
    ```bash
    # cd into your project root
@@ -109,19 +109,7 @@ Once you have completed the pre-installation instructions above, you are ready t
    npm install
    ```
 
-4. Generate `wp-scripts` asset dependencies.
-
-   Before we get started with development, we need `wp-scripts` to do some setup. Run the following command to generate the necessary asset files.
-
-   ```bash
-   npm run build
-   ```
-
-   **_NOTE:_** Our setup leverages `wp-scripts` in order to manage asset dependencies. Each asset specified in the wepback configuration will generate it's own asset file `[filename].asset.php` which defines the asset's dependencies. For more information on the `wp-scripts` package, see [wp-scripts](https://developer.wordpress.org/block-editor/reference-guides/packages/packages-scripts/).
-
-### Develop with HMR
-
-1. Configure the `asset.json` file with your development settings (see pre-installation instructions above for setting up your apache server and defining a local domain for your wordpress site)
+4. Rename `assets.sample.json` file to `assets.json` and configure it with your development settings (see pre-installation instructions above for setting up your apache server and defining a local domain for your wordpress site)
 
    ```json
    {
@@ -138,9 +126,21 @@ Once you have completed the pre-installation instructions above, you are ready t
 
    For more details on the `config` object properties, see the [Define your own assets for your theme](#define-your-own-assets-for-your-theme) section below.
 
-2. Start `apache` server with MAMP/WAMP/XAMP.
+5. Generate `wp-scripts` asset dependencies.
 
-3. Start the proxy (development) server
+   Before we get started with development, we need `wp-scripts` to do some setup. Run the following command to generate the necessary asset files.
+
+   ```bash
+   npm run build
+   ```
+
+   **_NOTE:_** Our setup leverages `wp-scripts` in order to manage asset dependencies. Each asset specified in the wepback configuration will generate it's own asset file `[filename].asset.php` which defines the asset's dependencies. For more information on the `wp-scripts` package, see [wp-scripts](https://developer.wordpress.org/block-editor/reference-guides/packages/packages-scripts/).
+
+### Develop with HMR
+
+1. Start `apache` server with MAMP/WAMP/XAMP.
+
+2. Start the proxy (development) server
 
    After you run the following command, Wordpress' installation prompt should appear when your proxy server opens the url. Follow the instructions to install wordpress.
 
@@ -148,7 +148,7 @@ Once you have completed the pre-installation instructions above, you are ready t
    npm run start
    ```
 
-4. Once the install is complete, activate your custom theme in your wordpress site.
+3. Once the install is complete, activate your custom theme in your wordpress site.
 
 That's it! Try changing the `src/js/screen.js` file and see the changes reflected in your browser. By default, the package adds two scripts to your theme, `screen.js` and `editor.js`. Each of these scripts is defined in the `assets.json` file with conditions to enqueue them in the public facing area of your wordpress site nd editor respectively. Each script imports a correspdonding css file in your theme. Add more scripts or more css / scss files as you like. Try updating the css and see the changes reflected without a reload.
 
@@ -220,6 +220,44 @@ An array of script objects. Each script object contains the following properties
   }
 }
 ```
+
+### Adding a new asset
+
+To add a new asset, simply add a new object to the `assets` array in the `assets.json` file. You will have to run `npm run build` to generate the necessary asset files.
+
+Let's add some styles to our theme which we only want to appear on our custom template, "My Custom Template".
+
+1. Create a scss/css file in your `resources/assets/css` directory. For example, `my-custom-template.scss`.
+
+2. Create a script in your `resources/js` directory that will import the scss file. For example, `my-custom-template.js`.
+
+   ```js
+   import '../css/my-custom-template.scss';
+   ```
+
+3. Add the following to your `assets.json` file:
+
+   ```json
+   {
+     "assets": {
+       "wp_enqueue_scripts": [
+         {
+           "path": "/css/custom-template",
+           "ext": "css",
+           "condition": ["is_page_template", "My Custom Template", true]
+         }
+       ]
+     }
+   }
+   ```
+
+4. Run `npm run build` to generate the necessary asset files.
+
+5. Restart your development server with `npm run start`. The styles should now be enqueued on the "My Custom Template" page.
+
+You're done! Try changing the styles in your `my-custom-template.scss` file and see the changes reflected in your browser only on pages that use the "My Custom Template" page template.
+
+For a list of condition functions that you can use, see the [Wordpress Conditional Tags](https://developer.wordpress.org/themes/basics/conditional-tags/).
 
 ## Modifying the Webpack configurations
 
