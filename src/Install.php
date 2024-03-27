@@ -137,14 +137,21 @@ class Install
         }
     }
 
+    /**
+     * Add enqueue line to functions.php
+     *
+     * Appends the enqueue line to the functions.php file if it does not already exist
+     *
+     * @param string $root
+     * @return void
+     */
     private static function addEnqueueAssetsToFunctions($root)
     {
-        $functions = file_get_contents($root . 'resources/functions.php');
-        $enqueueLine = "/** Enqueue Custom Theme Assets */
-        require_once get_template_directory() . '/inc/enqueue-assets.php';";
+        $functionsPath = $root . 'resources/functions.php';
+        $functions = file_get_contents($functionsPath);
+        $enqueueLine = "/** Enqueue Custom Theme Assets */ " . PHP_EOL . "require_once get_template_directory() . '/inc/enqueue-assets.php';";
         if (strpos($functions, $enqueueLine) === false) {
-            $functions = str_replace('<?php', '<?php' . $enqueueLine, $functions);
-            file_put_contents($root . 'resources/functions.php', $functions);
+            file_put_contents($functionsPath, $functions . PHP_EOL . $enqueueLine, FILE_APPEND | LOCK_EX);
         }
     }
 }
