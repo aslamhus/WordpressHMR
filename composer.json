@@ -11,20 +11,13 @@
   "authors": [
     {
       "name": "aslamhus",
-      "email": "aslam.percy.husain@gmail.com"
+      "email": "aslam.percy.husain@gqmail.com"
     }
   ],
   "require-dev": {
     "phpunit/phpunit": "^9.6"
   },
   "scripts": {
-    "post-install-cmd": [
-      "Aslamhus\\WordpressHMR\\Install::postPackageInstall"
-    ],
-    "post-package-install": [
-      "Aslamhus\\WordpressHMR\\Install::postPackageInstall",
-      "php echo 'testing'"
-    ],
     "test-install": "Aslamhus\\WordpressHMR\\Install::postPackageInstall"
   }
 }

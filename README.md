@@ -39,28 +39,49 @@ the document root is the public folder of your wordpress site.
    127.0.0.1 local.mysite
    ```
 
-### Wordpress setup
+### Post Installation
 
-1. Use wp-cli to install wordpress.
+1. After installing the package, you can find the installer.php file in the package's root directory (vendor/aslamhus/wordpress-hmr/installer.php). Move this file to the root directory of your wordpress site and run it in your browser. This will install the necessary files in your theme directory.
 
    ```bash
-   wp core download
+   mv vendor/aslamhus/wordpress-hmr/installer.php /path/to/your/wordpress-site
    ```
 
-2. Go to your wordpress site and install the site.
+   (Replace `/path/to/your/wordpress-site` with the path to your wordpress site.
 
-   If you have difficulty connecting to the database, try specifying the port number in the `DB_HOST` constant. Make sure this is the correct port based on your MAMP/XAMPP/WAMP setup.
+2. Spin up your server and go the local url you have chosen for your site. Wordpress' installation prompt should appear. Follow the instructions to install wordpress.
+
+3. If you have difficulty connecting to the database, try specifying the port number in the `DB_HOST` constant. Make sure this is the correct port based on your MAMP/XAMPP/WAMP setup.
 
    ```php
    /** Database hostname */
    define( 'DB_HOST', '127.0.0.1:8889' );
    ```
 
-3. Set your config env to development
+4. Set your config env to development
 
    ```php
    define( 'WP_ENVIRONMENT_TYPE', 'development' )
    ```
+
+5. Change the assets.sample.json to assets.json and set up the config values for your local environment.
+
+   ```json
+   {
+     "config": {
+       "handlePrefix": "custom-asset",
+       "host": "local.wordpress-hmr-setup",
+       "site": "http://local.wordpress-hmr-setup:8888",
+       "port": "8888",
+       "protocol": "http",
+       "themePath": "/wp-content/themes/my-custom-theme"
+     }
+   }
+   ```
+
+6. Add any scripts you'd like to include in the `assets` property of the assets.json file. assets.sample.json provides explample scripts.
+
+7. Create a child theme in the resources folder of your project. This is where you will be developing your theme.Make sure not to replace `enqueue-assets.php` and `assets.json` files in the child theme.
 
 ### Setup the theme
 

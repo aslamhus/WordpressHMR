@@ -1,5 +1,9 @@
 [
   ["assets.sample.json", "resources/assets/"],
+  ["editor.css", "resources/assets/css/"],
+  ["editor.js", "resources/js/"],
+  ["screen.css", "resources/assets/css/"],
+  ["screen.js", "resources/js/"],
   ["enqueue-assets.php", "resources/inc/"],
   ["webpack.common.js", ""],
   ["webpack.dev.js", ""],
