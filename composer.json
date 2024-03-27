@@ -18,8 +18,12 @@
     "phpunit/phpunit": "^9.6"
   },
   "scripts": {
-    "post-package-install": [
+    "post-install-cmd": [
       "Aslamhus\\WordpressHMR\\Install::postPackageInstall"
+    ],
+    "post-package-install": [
+      "Aslamhus\\WordpressHMR\\Install::postPackageInstall",
+      "php echo 'testing'"
     ],
     "test-install": "Aslamhus\\WordpressHMR\\Install::postPackageInstall"
   }
