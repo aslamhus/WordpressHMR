@@ -6,6 +6,10 @@ This package allows you to develop wordpress themes with `Webpack` and hot modul
 
 Defining and enqueing assets is as simple as managing a single `assets.json` file. This file contains the configuration for your assets, including the path to your scripts and styles, the hooks where they should be enqueued, and any conditions for enqueuing them.
 
+## Why not just use `wp-scripts`?
+
+`wp-scripts` is a great package for managing assets in your theme, but it lacks the ability to hot reload styles and scripts. While you can leverage hot module replacement in block development, it is not currenntly possible to do so for theme development. This package combines the power of `wp-scripts` to manage asset dependencies with a dynamic enqueing algorithm to provide hot module replacement for your theme development.
+
 ### Example
 
 ```json
@@ -39,7 +43,7 @@ Defining and enqueing assets is as simple as managing a single `assets.json` fil
 
 ### How does it work?
 
-This package uses the assets you define in the `assets.json` file to generate the necessary webpack configuration to build your assets. In development, each asset is enqueued dynamically with using a path to a proxy development server. When you make changes to your assets, webpack will automatically rebuild your assets and the browser will refresh to reflect the changes. In production, the assets are statically enqueued with the correct path to your theme directory in an efficient and Wordpress compliant manner.
+This package uses the assets you define in the `assets.json` file to generate the necessary webpack configuration to build your assets. In development, each asset is enqueued dynamically using a path to a proxy development server. When you make changes to your assets, webpack will provide hot updates without requiring a reload (unless you change javascript). In production, the assets are statically enqueued with the correct path to your theme directory in an efficient and Wordpress compliant manner.
 
 #### Styles
 
@@ -88,21 +92,21 @@ Once you have completed the pre-installation instructions above, you are ready t
    composer require aslamhus/wordpress-hmr
    ```
 
-2. Install `npm` dependencies. If you have not already installed `npm`, you can do so by installing `node.js`.
-
-   ```bash
-   npm install
-   ```
-
-3. Run the installer script. You can find installer.php file in the package's root directory (vendor/aslamhus/wordpress-hmr/installer.php). Move this file to the root directory of your wordpress site and run it on the command line. This will install the necessary files in your theme directory.
+2. Run the installer script. You can find installer.php file in the package's root directory (vendor/aslamhus/wordpress-hmr/installer.php). Move this file to the root directory of your wordpress site and run it on the command line. This will install the necessary files in your theme directory.
 
    ```bash
    # cd into your project root
    cd /path/to/your/project-root
    # move the installer
-   mv vendor/aslamhus/wordpress-hmr/installer.php /path/to/your/wordpress-site
+   mv vendor/aslamhus/wordpress-hmr/installer.php ./installer.php
    # run the installer
    php installer.php
+   ```
+
+3. Install `npm` dependencies. This will install the necessary packages for development.
+
+   ```bash
+   npm install
    ```
 
 4. Generate `wp-scripts` asset dependencies.
