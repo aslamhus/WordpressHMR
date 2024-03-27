@@ -2,13 +2,50 @@
 
 ## Introduction
 
-This is a simple setup for developing wordpress themes with webpack and hot module replacement (HMR). It uses the `wp-scripts` package in tandem with a custom enqueuing algorithm to enqueue assets in your theme.
+This package allows you to develop wordpress themes with `Webpack` and hot module replacement (HMR). It uses the `wp-scripts` package in tandem with a custom enqueuing algorithm to enqueue assets in your theme.
+
+Defining and enqueing assets is as simple as managing a single `assets.json` file. This file contains the configuration for your assets, including the path to your scripts and styles, the hooks where they should be enqueued, and any conditions for enqueuing them.
+
+### Example
+
+```json
+{
+  "config": {
+    "handlePrefix": "custom-asset",
+    "host": "local.mysite",
+    "site": "http://local.mysite:8888",
+    "port": "8888",
+    "protocol": "http",
+    "themePath": "/wp-content/themes/my-custom-theme"
+  },
+  "assets": {
+    "enqueue_block_editor_assets": [
+      {
+        "handle": "editor-js",
+        "path": "/js/editor",
+        "ext": "js"
+      }
+    ],
+    "wp_enqueue_scripts": [
+      {
+        "path": "/js/screen",
+        "ext": "js",
+        "condition": ["is_user_logged_in", null, false]
+      }
+    ]
+  }
+}
+```
 
 ### How does it work?
 
-This package uses the assets you define in the `assets.json` file to generate the necessary webpack configuration to build your assets. In development, each asset is enqueued with a hard coded path to your local development server. When you make changes to your assets, webpack will automatically rebuild your assets and the browser will refresh to reflect the changes. In production, the assets are enqueued with the correct path to your theme directory in a Wordpress compliant manner.
+This package uses the assets you define in the `assets.json` file to generate the necessary webpack configuration to build your assets. In development, each asset is enqueued dynamically with using a path to a proxy development server. When you make changes to your assets, webpack will automatically rebuild your assets and the browser will refresh to reflect the changes. In production, the assets are statically enqueued with the correct path to your theme directory in an efficient and Wordpress compliant manner.
 
-Styles are not enqueued seprately with the wp_enqueue_style hook, but rather as imported dependencies in your javascript files. This allows us to use HMR for styles as well.
+#### Styles
+
+Styles are not enqueued separately with the wp_enqueue_style hook, but rather as imported dependencies in your javascript files. This allows us to use HMR for styles as well.
+
+#### Conditional enqueuing
 
 In the assets.json file you can specify conditions for enqueuing scripts. For example, you can specify that a script should only be enqueued on a specific page template or in the block editor.
 
@@ -17,14 +54,16 @@ In the assets.json file you can specify conditions for enqueuing scripts. For ex
 - Node.js
 - MAMP / XAMPP / WAMP
 
-## Installation
+## Pre Installation
 
-### MAMP setup
+### Setup your apache server
+
+#### Example: MAMP
 
 Create local domain for your wordpress site. For example `localhost.mysite` where
-the document root is the public folder of your wordpress site.
+the document root is the public folder of your wordpress site `project-root/public`
 
-1. Add the following to your `httpd-vhosts.conf` file.
+1. If using MAMP, Add the following to your `httpd-vhosts.conf` file.
 
    ```bash
    <VirtualHost *:8888>
@@ -39,9 +78,11 @@ the document root is the public folder of your wordpress site.
    127.0.0.1 local.mysite
    ```
 
-### Install package and setup
+## Install
 
-1. Install the package
+Once you have completed the pre-installation instructions above, you are ready to install the package and its dependencies.
+
+1. Install the package in the root directory of your project
 
    ```bash
    composer require aslamhus/wordpress-hmr
@@ -53,25 +94,67 @@ the document root is the public folder of your wordpress site.
    npm install
    ```
 
-3. After installing the package, you can find the installer.php file in the package's root directory (vendor/aslamhus/wordpress-hmr/installer.php). Move this file to the root directory of your wordpress site and run it in your browser. This will install the necessary files in your theme directory.
+3. Run the installer script. You can find installer.php file in the package's root directory (vendor/aslamhus/wordpress-hmr/installer.php). Move this file to the root directory of your wordpress site and run it on the command line. This will install the necessary files in your theme directory.
 
    ```bash
+   # cd into your project root
+   cd /path/to/your/project-root
+   # move the installer
    mv vendor/aslamhus/wordpress-hmr/installer.php /path/to/your/wordpress-site
+   # run the installer
+   php installer.php
    ```
 
-   (Replace `/path/to/your/wordpress-site` with the path to your wordpress site.
+4. Generate `wp-scripts` asset dependencies.
 
-### Post installation
+   Before we get started with development, we need `wp-scripts` to do some setup. Run the following command to generate the necessary asset files.
 
-1. Start `apache` server with MAMP/WAMP/XAMP.
+   ```bash
+   npm run build
+   ```
 
-2. Start the proxy (development) server
+   **_NOTE:_** Our setup leverages `wp-scripts` in order to manage asset dependencies. Each asset specified in the wepback configuration will generate it's own asset file `[filename].asset.php` which defines the asset's dependencies. For more information on the `wp-scripts` package, see [wp-scripts](https://developer.wordpress.org/block-editor/reference-guides/packages/packages-scripts/).
+
+### Develop with HMR
+
+1. Configure the `asset.json` file with your development settings (see pre-installation instructions above for setting up your apache server and defining a local domain for your wordpress site)
+
+   ```json
+   {
+     "config": {
+       "handlePrefix": "custom-asset",
+       "host": "local.mysite",
+       "site": "http://local.mysite:8888",
+       "port": "8888",
+       "protocol": "http",
+       "themePath": "/wp-content/themes/my-custom-theme"
+     }
+   }
+   ```
+
+   For more details on the `config` object properties, see the [Define your own assets for your theme](#define-your-own-assets-for-your-theme) section below.
+
+2. Start `apache` server with MAMP/WAMP/XAMP.
+
+3. Start the proxy (development) server
+
+   After you run the following command, Wordpress' installation prompt should appear when your proxy server opens the url. Follow the instructions to install wordpress.
 
    ```bash
    npm run start
    ```
 
-3. Wordpress' installation prompt should appear when your proxy server opens the url. Follow the instructions to install wordpress.
+4. Once the install is complete, activate your custom theme in your wordpress site.
+
+That's it! Try changing the `src/js/screen.js` file and see the changes reflected in your browser. By default, the package adds two scripts to your theme, `screen.js` and `editor.js`. Each of these scripts is defined in the `assets.json` file with conditions to enqueue them in the public facing area of your wordpress site nd editor respectively. Each script imports a correspdonding css file in your theme. Add more scripts or more css / scss files as you like. Try updating the css and see the changes reflected without a reload.
+
+### Build for production
+
+Building is a very simple process, and leverages `wp-scripts` to generate the necessary asset files. A little magic is performed by `Aslamhus\WordpressHMR\EnqueueAssets` to create a static script which enqueues the assets in your theme, avoiding the performance overhead of enqueuing assets dynamically.
+
+```bash
+npm run build
+```
 
 ### Troubleshooting the setup
 
@@ -88,86 +171,57 @@ the document root is the public folder of your wordpress site.
    define( 'WP_ENVIRONMENT_TYPE', 'development' )
    ```
 
-### Add assets to your theme
+### Define your own assets for your theme
 
-1. Change the assets.sample.json to assets.json and set up the config values for your local environment.
+The `assets.json` file is where you define your assets. It is a simple JSON file that contains the following properties:
 
-   ```json
-   {
-     "config": {
-       "handlePrefix": "custom-asset",
-       "host": "local.wordpress-hmr-setup",
-       "site": "http://local.wordpress-hmr-setup:8888",
-       "port": "8888",
-       "protocol": "http",
-       "themePath": "/wp-content/themes/my-custom-theme"
-     }
-   }
-   ```
+- `config` - This is where you define the configuration for your assets.
+- `assets` - This is where you define your scripts. Each property of the `assets` object is a hook where you want to enqueue your script. The value of each property is an array of script objects.
 
-2. Add any scripts you'd like to include in the `assets` property of the assets.json file. assets.sample.json provides explample scripts.
+### Config
 
-3. Activate the theme in your wordpress site.
+- `handlePrefix` - This is the prefix for your asset handles. This is useful if you want to avoid conflicts with other plugins or themes.
+- `host` - This is the host of your local development server.
+- `port` - This is the port of your local development server.
+- `protocol` - This is the protocol of your local development server.
+- `themePath` - This is the path to your theme directory.
 
-### Setup the theme
+### Assets
 
-Login into your wordpress site and activate your custom theme.
+An array of script objects. Each script object contains the following properties:
 
-### Configure asset.json
+- `handle` - The handle of the script. This is the name that you will use to enqueue the script.
+- `hooks` - An array of hooks where the script will be enqueued.
+- `path` - The path to the script file.
+- `ext` - The file extension of the script file.
+- `condition` - a condition expression, which is an array of 3 elements. The first element is the function name, the second element is the function argument, and the third element is the expected value. If the condition is met, the script will be enqueued.
 
 ```json
 {
-  "config": {
-    "handlePrefix": "custom-asset",
-    "host": "local.yourdomain",
-    "port": "8888",
-    "protocol": "http",
-    "themePath": "/wp-content/themes/your-theme-directory"
-  },
-  "scripts": [
-    {
-      "handle": "editor-js",
-      "hooks": ["enqueue_block_editor_assets"],
-      "path": "/js/editor",
-      "ext": "js"
-    },
-    {
-      "hooks": ["wp_enqueue_scripts"],
-      "path": "/js/screen",
-      "ext": "js",
-      "condition": ["get_page_template_slug", "", "page-with-featured-image-header"]
-    }
-  ]
+  "assets": {
+    "enqueue_block_editor_assets": [
+      {
+        "handle": "editor-js",
+        "path": "/js/editor",
+        "ext": "js"
+      }
+    ],
+    "wp_enqueue_scripts": [
+      {
+        "path": "/js/screen",
+        "ext": "js",
+        "condition": ["is_user_logged_in", null, false]
+      }
+    ]
+  }
 }
 ```
 
-## Start development
-
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start development server
-
-   ```bash
-   npm start
-   ```
-
-## Build
-
-Build outputs to your public folder, in your theme path.
-
-The theme path is defined in the `asset.json` file.
+## Modifying the Webpack configurations
 
 **_WARNING_**: You can set the webpack `output` option to `clean` the public folder before building, however if you have not defined the public folder correctly, you may end up deleting unintended files. Please test your configuration first before enabling `clean`.
 
 `clean` is set to false by default to ensure that you do not accidentally delete files.
-
-```bash
-npm run build
-```
 
 ## Directory Structure
 
@@ -191,37 +245,3 @@ The following files are required in your theme:
 - `assets/assets.json` - This is where you define your assets.
 - `assets/assets.php` - This is where you load the assets.json file.
 - `inc/enqueue-assets.php` - This is where you enqueue your assets.
-
-## The assets.json file
-
-The `assets.json` file is where you define your assets. It is a simple JSON file that contains the following properties:
-
-- `config` - This is where you define the configuration for your assets.
-- `scripts` - This is where you define your scripts.
-- `styles` - This is where you define your styles.
-
-### Config
-
-- `handlePrefix` - This is the prefix for your asset handles. This is useful if you want to avoid conflicts with other plugins or themes.
-- `host` - This is the host of your local development server.
-- `port` - This is the port of your local development server.
-- `protocol` - This is the protocol of your local development server.
-- `themePath` - This is the path to your theme directory.
-
-### Scripts
-
-An array of script objects. Each script object contains the following properties:
-
-- `handle` - The handle of the script. This is the name that you will use to enqueue the script.
-- `hooks` - An array of hooks where the script will be enqueued.
-- `path` - The path to the script file.
-- `ext` - The file extension of the script file.
-- `condition` - a condition expression, which is an array of 3 elements. The first element is the function name, the second element is the function argument, and the third element is the expected value. If the condition is met, the script will be enqueued.
-
-## Potential Improvements
-
-For a small number of assets, the performance overhead of the enqueue algorithm s negligible. However, for a very large number of assets, it would be better to perform the algorithm in a single pass and create an array of enqueued assets. This way we can avoid multiple iterations over the assets array.
-
-## TODO
-
-- TO get HMR to work with wp-scripts, you need to build the assets first in order to generate the asset.php files. (explain this further)
