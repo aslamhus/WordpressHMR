@@ -6,6 +6,8 @@ namespace Aslamhus\WordpressHMR;
  *
  * Install
  *
+ * installs the wordpress theme and other files based on the install-manifest.json
+ *
  *
  * Directory Structure
  * |__ vendor
@@ -16,10 +18,10 @@ namespace Aslamhus\WordpressHMR;
  */
 class Install
 {
-    public static function postPackageInstall()
+    public static function postPackageInstall(string $root = "")
     {
         echo 'installing...';
-        $root = __DIR__ . '/../../../../';
+        $root = $root ?? __DIR__;
         // check that vendor exists in the root directory
         if (!file_exists($root . 'vendor')) {
             echo "Vendor directory not found in the root directory. Please run composer install";
