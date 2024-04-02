@@ -1,6 +1,7 @@
 <?php
 
-require_once __DIR__ . "/vendor/autoload.php";
+$rootDir = __DIR__ . '/../../../../';
+require_once $rootDir . "vendor/autoload.php";
 
 use Aslamhus\WordpressHMR\EnqueueAssets;
 
@@ -13,5 +14,5 @@ if(!file_exists($path)) {
 }
 $jsonString = file_get_contents($path);
 $assetsJson =  json_decode($jsonString, true);
-$enqueuer = new EnqueueAssets($assetsJson);
+$enqueuer = new EnqueueAssets($assetsJson, $rootDir . 'public');
 $enqueuer->buildAssetsFile();

@@ -173,19 +173,13 @@ Once you have completed the pre-installation instructions above, you are ready t
    php installer.php
    ```
 
-3. Move the build helper script to the root directory of your project. The builder scripts is run when you build your package for production. It generates a script that statically enqueues your assets in your theme directory.
-
-   ```bash
-   mv vendor/aslamhus/wordpress-hmr/src/build.php ./build.php
-   ```
-
-4. Install `npm` dependencies. This will install the necessary packages for development.
+3. Install `npm` dependencies. This will install the necessary packages for development.
 
    ```bash
    npm install
    ```
 
-5. Rename `assets.sample.json` file to `assets.json` and configure it with your development settings (see pre-installation instructions above for setting up your apache server and defining a local domain for your wordpress site)
+4. Rename `assets.sample.json` file to `assets.json` and configure it with your development settings (see pre-installation instructions above for setting up your apache server and defining a local domain for your wordpress site)
 
    ```json
    {
@@ -202,7 +196,7 @@ Once you have completed the pre-installation instructions above, you are ready t
 
    For more details on the `config` object properties, see the [Define your own assets for your theme](#define-your-own-assets-for-your-theme) section below.
 
-6. Generate `wp-scripts` asset dependencies.
+5. Generate `wp-scripts` asset dependencies.
 
    Before we get started with development, we need `wp-scripts` to do some setup. Run the following command to generate the necessary asset files.
 

@@ -19,7 +19,7 @@ class EnqueueAssets
     private array $queue = [];
     private string $env;
     private string $publicBuildPath;
-    public const DEFAULT_PUBLIC_BUILD_PATH = __DIR__ . '/public';
+    public const DEFAULT_PUBLIC_BUILD_PATH = __DIR__ . '/../../../../public';
 
 
     public function __construct(array $assetsJson, string $publicBuildPath = self::DEFAULT_PUBLIC_BUILD_PATH)
@@ -117,20 +117,17 @@ class EnqueueAssets
                 $argsArrayString = json_encode($enqueueArgs, JSON_UNESCAPED_SLASHES);
                 if($condition) {
                     $statement = $condition[0];
-                    $argument = $condition[1];
-                    $value = $condition[2] ?? true;
-                    // enclose string in quotes
-                    // convert boolean to string
-                    if(is_bool($value)) {
-                        $value = $value ? 'true' : 'false';
-                    }
+                    $argument = $this->getConditionArgumentForBuild($condition[1]);
+                    $value = $this->getConditionValueForBuild($condition[2]);
+
+
                     // if condition is true, enqueue the asset
-                    $content .= "if(call_user_func('$statement', '$argument') == $value) {\n";
+                    $content .= "if($statement($argument) == $value) {\n";
                     // enqueue the asset
-                    $content .= "call_user_func('$func_name', ...$argsArrayString);\n";
+                    $content .= "$func_name(...$argsArrayString);\n";
                     $content .= "}\n";
                 } else {
-                    $content .= "call_user_func('$func_name', ...$argsArrayString);\n";
+                    $content .= "$func_name(...$argsArrayString);\n";
 
                 }
             }
@@ -354,7 +351,7 @@ class EnqueueAssets
     private function getConditionArgument($argument): mixed
     {
         // if the argument is an array and the first element is 'function'
-        if(is_array($argument) && count($argument) > 1 && $argument[0] === 'function') {
+        if($this->isArgumentFunction($argument)) {
             $func = $argument[1];
             $args = array_slice($argument, 2);
             // resolve the function argument
@@ -369,6 +366,11 @@ class EnqueueAssets
         return $argument;
     }
 
+    private function isArgumentFunction($argument): bool
+    {
+        return is_array($argument) && count($argument) > 1 && $argument[0] === 'function';
+    }
+
     private function getConditionFunction($func): callable
     {
         // check if the function exists
@@ -376,6 +378,43 @@ class EnqueueAssets
             throw new \Exception("Function $func is not callable.");
         }
         return $func;
+    }
+
+    /**
+     * Get the condition argument for the build enqueue-assets.php
+     *
+     * @param [type] $argument
+     * @return string
+     */
+    private function getConditionArgumentForBuild($argument): string
+    {
+
+        // if the argumnet is a function, write the function call
+        if($this->isArgumentFunction($argument)) {
+            $statement = $argument[1];
+            $args = array_slice($argument, 2);
+
+            $args = json_encode($args, JSON_UNESCAPED_SLASHES);
+            $argument = "$statement($args)";
+        } elseif(is_array($argument)) {
+            $argument = json_encode($argument, JSON_UNESCAPED_SLASHES);
+        }
+        // if the argument is null, return an empty string
+        if($argument === null) {
+            return '';
+        }
+        return $argument;
+    }
+
+    private function getConditionValueForBuild($value): string
+    {
+        if(is_bool($value)) {
+            $value = $value ? 'true' : 'false';
+        }
+        if(is_string($value)) {
+            $value = "'$value'";
+        }
+        return $value;
     }
 
 }
