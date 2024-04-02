@@ -18,15 +18,20 @@ class EnqueueAssets
     private string $handlePrefix;
     private array $queue = [];
     private string $env;
+    private string $publicBuildPath;
+    public const DEFAULT_PUBLIC_BUILD_PATH = __DIR__ . '/public';
 
 
-    public function __construct(array $assetsJson)
+    public function __construct(array $assetsJson, string $publicBuildPath = self::DEFAULT_PUBLIC_BUILD_PATH)
     {
         // get the environment type
         if(function_exists('wp_get_environment_type')) {
             $this->env = wp_get_environment_type() ;
         } else {
             $this->env = 'build';
+            // the public build path defines where the assets are built
+            // the public directory is where your wordpress installation is
+            $this->publicBuildPath = $publicBuildPath;
         }
         $this->assetsJson = $assetsJson;
         // get the config
@@ -100,7 +105,7 @@ class EnqueueAssets
 
 
         $themePath = $this->config['themePath'] ?? '';
-        $enqueueAssetsFile = __DIR__ . '/../public' . $themePath . "/inc/enqueue-assets.php";
+        $enqueueAssetsFile = $this->publicBuildPath . $themePath . "/inc/enqueue-assets.php";
         $content = "<?php\n";
         foreach($this->queue as $hook => $queueItems) {
             $content .= "// $hook\n";
@@ -114,6 +119,8 @@ class EnqueueAssets
                     $statement = $condition[0];
                     $argument = $condition[1];
                     $value = $condition[2] ?? true;
+                    // enclose string in quotes
+                    // convert boolean to string
                     if(is_bool($value)) {
                         $value = $value ? 'true' : 'false';
                     }
@@ -205,7 +212,7 @@ class EnqueueAssets
             // this file contains the asset handle, dependencies, version, and in_footer flag
             if($this->env === 'build') {
                 $themePath = $this->config['themePath'] ?? '';
-                $asset = __DIR__ . "/../public". $themePath .  $assetRelativePath . ".asset.php";
+                $asset = $this->publicBuildPath . $themePath .  $assetRelativePath . ".asset.php";
             } else {
                 $asset = get_parent_theme_file_uri($assetRelativePath . ".asset.php");
             }
@@ -279,8 +286,23 @@ class EnqueueAssets
     /**
      * Evaluate the condition provided in the assets.json file
      *
-     * example: [ 'is_page_template', 'template-about.php', true]
+     * The condition is an array with the following structure:
+     * [condition, argument, value] where:
+     * - condition: the function to check against
+     * - argument: the argument to pass to the function
+     * - value: the value to check the function against
+     *
+     *
+     * # Example - String as an argument
+     *
+     * [ 'is_page_template', 'template-about.php', true]
      * is evaluated as: is_page_template('template-about.php') == true
+     *
+     * # Example - Function as an argument
+     *
+     * [ 'is_page_template', ['function', 'get_page_template_slug', $post_id], "my-template-slug""]
+     *
+     *
      *
      * @param array|null $condition
      * @return boolean
@@ -291,11 +313,69 @@ class EnqueueAssets
         if(!$condition) {
             return true;
         }
-        $func = $condition[0];
-        $argument = $condition[1] ?? null;
+
+        // get the function to check against
+        $func = $this->getConditionFunction($condition[0] ?? null);
+        // get the argument to check against
+        $argument = $this->getConditionArgument($condition[1] ?? null);
         // value to check expression against (defaults to true)
         $value = $condition[2] ?? true;
         return call_user_func($func, $argument) == $value;
+    }
+
+    /**
+     * Get condition argument
+     *
+     *  get the argument. The argument can be any value but also a function if
+     * the argument is an array with the first element describing the type of argument,
+     *  the second element is the function name, and the rest of the elements are the arguments
+     * i.e. ['function', 'is_page_template', ...args]
+     *
+     *
+     * The argument value type can be any value, but also a function or variable
+     * if the type is specified.
+     *
+     * # Example - Function as an argument
+     *
+     * [ 'is_page_template', ['function', 'get_page_template_slug', $post_id], "my-template-slug""]
+     *
+     * # Example - Variable as an argument
+     *
+     * [ 'is_page_template', '$post_id', "my-template-slug"]
+     *
+     * If you want to use a variable as an argument, you can use a string with a $ prefix. Note that
+     * all variables must have global scope.
+     * To pass in a value that starts with a $, you can escape it with a backslash.
+     *
+     *
+     * @param [type] $argument
+     * @return mixed
+     */
+    private function getConditionArgument($argument): mixed
+    {
+        // if the argument is an array and the first element is 'function'
+        if(is_array($argument) && count($argument) > 1 && $argument[0] === 'function') {
+            $func = $argument[1];
+            $args = array_slice($argument, 2);
+            // resolve the function argument
+            $argument = call_user_func($func, ...$args);
+        }
+        // if the argument is a string but the first character is a $, return the variable
+        if(is_string($argument) && substr($argument, 0, 1) === '$') {
+            $argument = $GLOBALS[substr($argument, 1)];
+            return $argument;
+        }
+
+        return $argument;
+    }
+
+    private function getConditionFunction($func): callable
+    {
+        // check if the function exists
+        if(!is_callable($func)) {
+            throw new \Exception("Function $func is not callable.");
+        }
+        return $func;
     }
 
 }

@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This package allows you to develop wordpress themes with `Webpack` and hot module replacement (HMR). It uses the `wp-scripts` package in tandem with a custom enqueuing algorithm to enqueue assets in your theme.
+This is an experimental package which allows you to develop wordpress themes with `Webpack` and hot module replacement (HMR). It uses the `wp-scripts` package in tandem with a custom enqueuing algorithm to enqueue assets in your theme.
 
 Defining and enqueing assets is as simple as managing a single `assets.json` file. This file contains the configuration for your assets, including the path to your scripts and styles, the hooks where they should be enqueued, and any conditions for enqueuing them.
 
@@ -52,6 +52,76 @@ Styles are not enqueued separately with the wp_enqueue_style hook, but rather as
 #### Conditional enqueuing
 
 In the assets.json file you can specify conditions for enqueuing scripts. For example, you can specify that a script should only be enqueued on a specific page template or in the block editor.
+Conditional enqueuing can get complicated, so let's break it down with examples.
+
+##### Example 1: Enqueue a script only on the block editor
+
+```json
+{
+  "assets": {
+    "enqueue_block_editor_assets": [
+      {
+        "handle": "editor-js",
+        "path": "/js/editor",
+        "ext": "js"
+      }
+    ]
+  }
+}
+```
+
+##### Example 2: Enqueue a script only on the front end
+
+```json
+{
+  "assets": {
+    "wp_enqueue_scripts": [
+      {
+        "path": "/js/screen",
+        "ext": "js"
+      }
+    ]
+  }
+}
+```
+
+##### Example 3: Enqueue a script only on a specific page template
+
+```json
+{
+  "assets": {
+    "wp_enqueue_scripts": [
+      {
+        "path": "/js/screen",
+        "ext": "js",
+        "condition": ["get_page_template_slug", "", "my-custom-template"]
+      }
+    ]
+  }
+}
+```
+
+##### Example 4: Use a conditional argument that takes the result of a function as an argument
+
+You can use a function as an argument by declaring the type in an array, followed by the function name, and then a list of optional arguments.
+
+In this example, we only want to enqueue an asset on the about page. We need the id value of the current page to use the `get_the_title` method. We can use the `get_the_id` function to get the id of the current page.
+
+This will evaluate to `get_the_title(get_the_id()) === 'about'`.
+
+```json
+{
+  "assets": {
+    "wp_enqueue_scripts": [
+      {
+        "path": "/js/screen",
+        "ext": "js",
+        "condition": ["get_the_title", ["function", "get_the_id"], "about"]
+      }
+    ]
+  }
+}
+```
 
 ## Requirements
 
@@ -106,7 +176,7 @@ Once you have completed the pre-installation instructions above, you are ready t
 3. Move the build helper script to the root directory of your project. The builder scripts is run when you build your package for production. It generates a script that statically enqueues your assets in your theme directory.
 
    ```bash
-   mv vendor/aslamhus/wordpress-hmr/build.php ./build.php
+   mv vendor/aslamhus/wordpress-hmr/src/build.php ./build.php
    ```
 
 4. Install `npm` dependencies. This will install the necessary packages for development.
@@ -204,7 +274,7 @@ An array of script objects. Each script object contains the following properties
 - `hooks` - An array of hooks where the script will be enqueued.
 - `path` - The path to the script file.
 - `ext` - The file extension of the script file.
-- `condition` - a condition expression, which is an array of 3 elements. The first element is the function name, the second element is the function argument, and the third element is the expected value. If the condition is met, the script will be enqueued.
+- `condition` - a condition expression, which is an array of 3 elements. The first element is the function name, the second element is the function argument, and the third element is the expected value. If the condition is met, the script will be enqueued. For more on conditional enqueuing, see the [Conditional enqueuing](#conditional-enqueuing) section below.
 
 ```json
 {
@@ -293,3 +363,7 @@ The following files are required in your theme:
 - `assets/assets.json` - This is where you define your assets.
 - `assets/assets.php` - This is where you load the assets.json file.
 - `inc/enqueue-assets.php` - This is where you enqueue your assets.
+
+## Contributing
+
+If you would like to contribute to this package, please feel free to submit a pull request. I would love to hear your feedback and suggestions for improvement.
