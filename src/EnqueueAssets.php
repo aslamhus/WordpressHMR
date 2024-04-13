@@ -16,6 +16,7 @@ class EnqueueAssets
     private array $config;
     private string $devPath;
     private string $handlePrefix;
+    private \stdClass $isEnqueued;
     private array $queue = [];
     private string $env;
     private string $publicBuildPath;
@@ -33,6 +34,9 @@ class EnqueueAssets
             // the public directory is where your wordpress installation is
             $this->publicBuildPath = $publicBuildPath;
         }
+        // init the isEnqueued object
+        $this->isEnqueued = new \stdClass();
+        // get the assets json
         $this->assetsJson = $assetsJson;
         // get the config
         $this->config = $assetsJson['config'] ?? [];
@@ -65,9 +69,12 @@ class EnqueueAssets
      */
     public function enqueue(int $priority = 10)
     {
+        // reset the isEnqueued object
+        $this->isEnqueued = new \stdClass();
         // for each hook (i.e. 'admin_enqueue_scripts'), add an action that enqueues each relevant asset
         foreach($this->queue as $hook => $queueItems) {
-            add_action($hook, function () use ($queueItems) {
+
+            add_action($hook, function () use ($queueItems, $hook) {
                 // note: sometimes if a url hits a 404 you'll get hooks called for each null asset
                 // this will call certain actions multiple times but with null args.
                 // this is a workaround to prevent that
@@ -83,6 +90,14 @@ class EnqueueAssets
                     if(!$this->evalCondition($condition)) {
                         continue;
                     }
+                    // add the handle to the isEnqueued object
+
+                    $path = $enqueueArgs[1];
+                    if(isset($this->isEnqueued->$path)) {
+
+                        continue;
+                    }
+                    $this->isEnqueued->$path = true;
                     // enqueue the asset
                     call_user_func($func_name, ...$enqueueArgs);
                 }
@@ -137,7 +152,7 @@ class EnqueueAssets
     }
 
     /**
-     * Build the queue of assets to be enqueued
+     * Build the array of assets to be enqueued
      *
      * Builds an array of hooks with their respective assets to be enqueued
      * example: [ 'wp_enqueue_scripts' => [ ['handle', 'wp_enqueue_script', $enqueueArgs], ... ] ]
@@ -154,7 +169,6 @@ class EnqueueAssets
         }
         // 1. loop through the assets for the hook and enqueue them
         foreach($assetsForHooks as $hook => $assets) {
-
             // initialize the queue item if it does not exist
             if(!isset($this->queue[$hook])) {
                 $this->queue[$hook] = [];
