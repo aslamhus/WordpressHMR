@@ -3,7 +3,7 @@
 namespace Aslamhus\WordpressHMR;
 
 /**
- * Enqueue Assets 1.0.0
+ * Enqueue Assets 1.2.3
  *
  * by @aslamhus
  *

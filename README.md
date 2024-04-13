@@ -6,11 +6,23 @@ This is an experimental package which allows you to develop wordpress themes wit
 
 Defining and enqueing assets is as simple as managing a single `assets.json` file. This file contains the configuration for your assets, including the path to your scripts and styles, the hooks where they should be enqueued, and any conditions for enqueuing them.
 
-## Why not just use `wp-scripts`?
+## Disclaimer
 
-`wp-scripts` is a great package for managing assets in your theme, but it lacks the ability to hot reload styles and scripts. While you can leverage hot module replacement in block development, it is not currenntly possible to do so for theme development. This package combines the power of `wp-scripts` to manage asset dependencies with a dynamic enqueing algorithm to provide hot module replacement for your theme development.
+Currently, this package only supports HMR for a single entry point per page. This means that if you have multiple entry points on a single page, only the first entry point will be hot reloaded. This is a limitation of `Webpack` and is not something that can be easily fixed. If you have multiple entry points on a single page, you will need to reload the page to see changes to the other entry points. I am open to suggestions on how to improve this. Please feel free to submit a pull request or open an issue.
 
-### Example
+### Recommendations
+
+Because of the entry point limitation, I recommend packaging your scripts into an editor and a screen script (this is also how Wordpress' `wp-scripts` operates). You could also package your scripts into a single entry point and use dynamic imports to load your scripts on demand.
+
+### Build Process
+
+This package is still useful as a conditional enqueuing tool for your theme. While HMR may not be possible for multiple entry points, the build process works seamlessly with multiple entry points and conditional enqueueing. You can define your assets in the `assets.json` file and run `npm run build` to generate the necessary asset files. Please see the [Define your own assets for your theme](#define-your-own-assets-for-your-theme) section below for more information.
+
+### Why not just use `wp-scripts`?
+
+`wp-scripts` is a great package for managing assets in your theme, but it lacks the ability to hot reload styles and scripts. While you can leverage hot module replacement in block development, it is not currently possible to do so for theme development. This package combines the power of `wp-scripts` to manage asset dependencies with a dynamic enqueing algorithm to provide hot module replacement for your theme development.
+
+## Example
 
 ```json
 {
