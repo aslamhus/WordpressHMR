@@ -14,25 +14,30 @@ class EnqueueAssets
 {
     private array $assetsJson;
     private array $config;
-    private string $devPath;
     private string $handlePrefix;
     private \stdClass $isEnqueued;
     private array $queue = [];
     private string $env;
-    private string $publicBuildPath;
-    public const DEFAULT_PUBLIC_BUILD_PATH = __DIR__ . '/../../../../public';
+    private string $wordpressPath;
+    public const DEFAULT_WORDPRESS_PATH = __DIR__ . '/../../../../public';
 
 
-    public function __construct(array $assetsJson, string $publicBuildPath = self::DEFAULT_PUBLIC_BUILD_PATH)
+    public function __construct(array $assetsJson, string $wordpressPath = self::DEFAULT_WORDPRESS_PATH)
     {
+        // load wordpress functions
+        if (!file_exists($wordpressPath . '/wp-load.php')) {
+            throw new \Exception("wp-load.php not found at " . $wordpressPath);
+        }
+
+        require_once $wordpressPath . '/wp-load.php';
         // get the environment type
-        if(function_exists('wp_get_environment_type')) {
+        if (function_exists('wp_get_environment_type')) {
             $this->env = wp_get_environment_type() ;
         } else {
             $this->env = 'build';
             // the public build path defines where the assets are built
             // the public directory is where your wordpress installation is
-            $this->publicBuildPath = $publicBuildPath;
+            $this->wordpressPath = $wordpressPath;
         }
         // init the isEnqueued object
         $this->isEnqueued = new \stdClass();
@@ -40,14 +45,18 @@ class EnqueueAssets
         $this->assetsJson = $assetsJson;
         // get the config
         $this->config = $assetsJson['config'] ?? [];
-        if(empty($this->config)) {
+        if (empty($this->config)) {
             throw new \Exception("'config' is not defined in assets.json.");
         }
-        // get devPath (the base path for development assets)
-        $this->devPath = $this->getDevPath();
-        if(empty($this->devPath)) {
-            throw new \Exception("'devPath' is not defined in assets.json");
+        // check the the config theme is the same as the stylesheet directory basename
+        $configTheme = $this->config['theme'] ?? '';
+        // get the theme name from the stylseheet (returns the theme directory name)
+        // @see: https://developer.wordpress.org/reference/classes/wp_theme/
+        $wpTheme = wp_get_theme()->get_stylesheet();
+        if ($configTheme !== $wpTheme) {
+            throw new \Exception("The theme name in the config file ('$configTheme') does not match the theme name in the stylesheet directory ('$wpTheme'). Please make sure that the active theme and the theme set in your assets.json files match.");
         }
+
         // get the handle prefix
         $this->handlePrefix = $this->config['handlePrefix'] ?? "custom-asset";
         // get the hooks by traversing assets json and merging all hooks
@@ -57,7 +66,7 @@ class EnqueueAssets
     }
 
     /**
-     * Enqueue the assets
+     * Enqueue the development assets
      *
      * This method is used in development to dynamically enqueue assets
      * and enable hot module replacement (HMR)
@@ -72,28 +81,35 @@ class EnqueueAssets
         // reset the isEnqueued object
         $this->isEnqueued = new \stdClass();
         // for each hook (i.e. 'admin_enqueue_scripts'), add an action that enqueues each relevant asset
-        foreach($this->queue as $hook => $queueItems) {
+        foreach ($this->queue as $hook => $queueItems) {
 
             add_action($hook, function () use ($queueItems, $hook) {
                 // note: sometimes if a url hits a 404 you'll get hooks called for each null asset
                 // this will call certain actions multiple times but with null args.
                 // this is a workaround to prevent that
-                if(empty($queueItems)) {
+                if (empty($queueItems)) {
                     return;
                 }
 
-                foreach($queueItems as $queueItem) {
+                foreach ($queueItems as $queueItem) {
                     $func_name = $queueItem[0];
                     $enqueueArgs = $queueItem[1];
                     $condition = $queueItem[2] ?? null;
+                    // add stylesheet directory uri to the src path in the enqueue args
+                    // 1. handle
+                    // 2. src
+                    // 3. dependencies
+                    // 4. version
+                    $enqueueArgs[1] = get_stylesheet_directory_uri() . $enqueueArgs[1];
+
                     // check if the condition is met
-                    if(!$this->evalCondition($condition)) {
+                    if (!$this->evalCondition($condition)) {
                         continue;
                     }
                     // add the handle to the isEnqueued object
 
                     $path = $enqueueArgs[1];
-                    if(isset($this->isEnqueued->$path)) {
+                    if (isset($this->isEnqueued->$path)) {
 
                         continue;
                     }
@@ -113,6 +129,10 @@ class EnqueueAssets
      * traversing the assets.json file each page load, avoiding dynamic asset loading
      * and improving performance. This method is called in the build process.
      *
+     *
+     * Note: we can't use wordpress functions in the build process, so we need to
+     * hardcode the paths and functions.
+     *
      * @return void
      */
     public function buildAssetsFile(): void
@@ -120,22 +140,33 @@ class EnqueueAssets
 
 
         $themePath = $this->config['themePath'] ?? '';
-        $enqueueAssetsFile = $this->publicBuildPath . $themePath . "/inc/enqueue-assets.php";
+        $enqueueAssetsFile = $this->wordpressPath . $themePath . "/inc/enqueue-assets.php";
+
+        // $enqueueAssetsFile = $this->wordpressPath . $themePath . "/inc/enqueue-assets.php";
         $content = "<?php\n";
-        foreach($this->queue as $hook => $queueItems) {
+        foreach ($this->queue as $hook => $queueItems) {
             $content .= "// $hook\n";
             $content .= "add_action('$hook', function () {\n";
-            foreach($queueItems as $queueItem) {
+            // get the theme path at the time of enqueueing
+            // why? Because if we build the assets file in development, the theme path will be different
+            $content .= "\$themepath = get_stylesheet_directory_uri();\n";
+            foreach ($queueItems as $queueItem) {
                 $func_name = $queueItem[0];
                 $enqueueArgs = $queueItem[1];
                 $condition = $queueItem[2] ?? null;
+
                 $argsArrayString = json_encode($enqueueArgs, JSON_UNESCAPED_SLASHES);
-                if($condition) {
+                // args array string is the json encoded array of enqueue arguments
+                // 1. handle
+                // 2. src
+                // 3. dependencies
+                // 4. version
+                // add theme path to the src
+                $argsArrayString[1] = "\$themepath . $argsArrayString[1]";
+                if ($condition) {
                     $statement = $condition[0];
                     $argument = $this->getConditionArgumentForBuild($condition[1]);
                     $value = $this->getConditionValueForBuild($condition[2]);
-
-
                     // if condition is true, enqueue the asset
                     $content .= "if($statement($argument) == $value) {\n";
                     // enqueue the asset
@@ -164,24 +195,24 @@ class EnqueueAssets
     {
 
         // loop through the assets and enqueue them
-        if(!is_array($assetsForHooks)) {
+        if (!is_array($assetsForHooks)) {
             throw new \Exception("assets argument must be an array in order to enqueue your custom scripts and styles");
         }
         // 1. loop through the assets for the hook and enqueue them
-        foreach($assetsForHooks as $hook => $assets) {
+        foreach ($assetsForHooks as $hook => $assets) {
             // initialize the queue item if it does not exist
-            if(!isset($this->queue[$hook])) {
+            if (!isset($this->queue[$hook])) {
                 $this->queue[$hook] = [];
             }
             // loop through the assets and enqueue them
-            foreach($assets as $assetData) {
-                if(!is_array($assetData)) {
+            foreach ($assets as $assetData) {
+                if (!is_array($assetData)) {
                     continue;
                 }
                 // get the enqueue item
                 $queueItem = $this->pushEnqueueAsset($assetData);
                 // push the enqueue item to the queue
-                if($queueItem) {
+                if ($queueItem) {
                     $this->queue[$hook][] = $queueItem;
                 }
             }
@@ -200,7 +231,7 @@ class EnqueueAssets
      */
     private function pushEnqueueAsset(array $assetData): ?array
     {
-        if(!is_array($assetData)) {
+        if (!is_array($assetData)) {
             return null;
         }
         // check for a conditional
@@ -213,23 +244,23 @@ class EnqueueAssets
         // get asset relative path
         $assetRelativePath = $assetData['path'];
         // get src path of the asset
-        $srcPath = $this->getSrcPath($assetRelativePath, $this->env, $this->devPath, $ext);
+        $srcPath = $this->getSrcPath($assetRelativePath, $ext);
         // prepare enqueue arguments
         // for more on enqueue arguments, @see https://developer.wordpress.org/reference/functions/wp_enqueue_script/
         $enqueueArgs = [ $handle, $srcPath];
         // 3. check if the environment is production or development
-        if($this->env === 'production' || $this->env === 'build') {
+        if ($this->env === 'production' || $this->env === 'build') {
             // get the asset file generated by wp-scripts (@see Webpack config)
             // this file contains the asset handle, dependencies, version, and in_footer flag
-            if($this->env === 'build') {
+            if ($this->env === 'build') {
                 $themePath = $this->config['themePath'] ?? '';
-                $asset = $this->publicBuildPath . $themePath .  $assetRelativePath . ".asset.php";
+                $asset = $this->wordpressPath . $themePath .  $assetRelativePath . ".asset.php";
             } else {
                 $asset = get_parent_theme_file_uri($assetRelativePath . ".asset.php");
             }
 
-
-            if(!file_exists($asset)) {
+            // echo  $this->wordpressPath . $themePath .  $assetRelativePath . ".asset.php";
+            if (!file_exists($asset)) {
                 // throw an error if the asset file does not exist
                 throw new \Exception("Asset file does not exist: " . $asset);
             }
@@ -251,47 +282,20 @@ class EnqueueAssets
         return [  $func_name, $enqueueArgs, $condition];
     }
 
-    private function getDevPath(): string
-    {
-        // devPath is constructed from the protocol, host, port and themePath
-        $themePath = $this->config['themePath'] ?? '';
-        $host = $this->config['host'] ?? '';
-        $port = $this->config['port'] ?? ''; // default to empty
-        $protocol = $config['protocol'] ?? 'http'; // default to http
-        if(empty($themePath) || empty($host) && $this->env === 'development') {
-            throw new \Exception("'themePath' and 'host' are required in assets.json for development environment.");
-        }
-        // construct the devPath, e.g. http://localhost:8888/wp-content/themes/my-child-theme
-        $devPath = $protocol . "://" . $host . ($port ? ":" . $port : "") . $themePath;
-        // remove trailing slash if present
-        return rtrim($devPath, '/');
 
-    }
 
 
 
     /**
      * Get the src path of the asset
      *
-     *
-     *  development (compiled from config values): http://localhost:8888/wp-content/themes/my-child-theme/js/screen.js
-     *  production: /path/to/theme/assets/js/screen.js
-     *
      * @param string $assetRelativePath
-     * @param string $env
-     * @param string $devPath
      * @param string $ext
      * @return string
      */
-    private function getSrcPath(string $assetRelativePath, string $env, string $devPath, string $ext): string
+    private function getSrcPath(string $assetRelativePath, string $ext): string
     {
-
-
-        $root = $devPath;
-        if($env === 'build' || $env === 'production') {
-            $root =  $this->config['site'] .  $this->config['themePath'] ;
-        }
-        return $root . $assetRelativePath . "." .$ext;
+        return  $assetRelativePath . "." .$ext;
     }
 
     /**
@@ -321,7 +325,7 @@ class EnqueueAssets
     private function evalCondition(?array $condition): bool
     {
 
-        if(!$condition) {
+        if (!$condition) {
             return true;
         }
 
@@ -365,14 +369,14 @@ class EnqueueAssets
     private function getConditionArgument($argument): mixed
     {
         // if the argument is an array and the first element is 'function'
-        if($this->isArgumentFunction($argument)) {
+        if ($this->isArgumentFunction($argument)) {
             $func = $argument[1];
             $args = array_slice($argument, 2);
             // resolve the function argument
             $argument = call_user_func($func, ...$args);
         }
         // if the argument is a string but the first character is a $, return the variable
-        if(is_string($argument) && substr($argument, 0, 1) === '$') {
+        if (is_string($argument) && substr($argument, 0, 1) === '$') {
             $argument = $GLOBALS[substr($argument, 1)];
             return $argument;
         }
@@ -388,7 +392,7 @@ class EnqueueAssets
     private function getConditionFunction($func): callable
     {
         // check if the function exists
-        if(!is_callable($func)) {
+        if (!is_callable($func)) {
             throw new \Exception("Function $func is not callable.");
         }
         return $func;
@@ -404,17 +408,17 @@ class EnqueueAssets
     {
 
         // if the argumnet is a function, write the function call
-        if($this->isArgumentFunction($argument)) {
+        if ($this->isArgumentFunction($argument)) {
             $statement = $argument[1];
             $args = array_slice($argument, 2);
 
             $args = json_encode($args, JSON_UNESCAPED_SLASHES);
             $argument = "$statement($args)";
-        } elseif(is_array($argument)) {
+        } elseif (is_array($argument)) {
             $argument = json_encode($argument, JSON_UNESCAPED_SLASHES);
         }
         // if the argument is null, return an empty string
-        if($argument === null) {
+        if ($argument === null) {
             return '';
         }
         return $argument;
@@ -422,10 +426,10 @@ class EnqueueAssets
 
     private function getConditionValueForBuild($value): string
     {
-        if(is_bool($value)) {
+        if (is_bool($value)) {
             $value = $value ? 'true' : 'false';
         }
-        if(is_string($value)) {
+        if (is_string($value)) {
             $value = "'$value'";
         }
         return $value;

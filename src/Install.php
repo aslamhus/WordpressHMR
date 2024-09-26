@@ -42,7 +42,7 @@ class Install
     private static function createPublicDirectory($root)
     {
         // create public directory if it does not exist
-        if(!file_exists($root . 'public')) {
+        if (!file_exists($root . 'public')) {
             mkdir($root . 'public', 0775, true);
             // download latest wordpress
             $wp = file_get_contents('https://wordpress.org/latest.zip');
@@ -68,16 +68,20 @@ class Install
             } else {
                 echo 'Wordpress unzipped failed';
             }
+        } else {
+            echo 'Public directory already exists';
         }
     }
 
     private static function copyWordpressChildThemeToResources($root)
     {
         // install resources directory with latest wordpress theme
-        if(!file_exists($root . 'resources')) {
+        if (!file_exists($root . 'resources')) {
             mkdir($root . 'resources', 0775, true);
             // copy latest wordpress theme directory (twentytwentyfour) from public directory
             self::recursiveCopyDirectory($root . 'public/wp-content/themes/twentytwentyfour', $root . 'resources/');
+        } else {
+            echo 'Resources directory already exists';
         }
 
     }
@@ -111,7 +115,7 @@ class Install
             $src = __DIR__ . '/files' . '/' . $filename;
             $destination = $root . $relativePath . $filename;
             // if the file does not already exist, copy it
-            if(!file_exists($destination)) {
+            if (!file_exists($destination)) {
                 copy($src, $destination);
             } else {
                 echo "File already exists: $destination \n\n";
@@ -131,7 +135,16 @@ class Install
             $package = json_decode(file_get_contents($root . 'package.json'), true);
             $scripts = json_decode(file_get_contents(__DIR__ . '/files/package.json'), true)['scripts'];
             $devDependencies = json_decode(file_get_contents(__DIR__ . '/files/package.json'), true)['devDependencies'];
-            $package['scripts'] = $scripts;
+            if (!isset($package['scripts'])) {
+                $package['scripts'] = [];
+            }
+            foreach ($scripts as $script) {
+                // skip script if it already exists
+                if (isset($package['scripts'][$script])) {
+                    continue;
+                }
+                $package['scripts'][$script] = $scripts[$script];
+            }
             $package['devDependencies'] = $devDependencies;
             file_put_contents($root . 'package.json', json_encode($package, JSON_PRETTY_PRINT));
         }
@@ -149,7 +162,7 @@ class Install
     {
         $functionsPath = $root . 'resources/functions.php';
         $functions = file_get_contents($functionsPath);
-        $enqueueLine = "/** Enqueue Custom Theme Assets */ " . PHP_EOL . "require_once get_template_directory() . '/inc/enqueue-assets.php';";
+        $enqueueLine = "/** Enqueue Custom Theme Assets */ " . PHP_EOL . "require_once  get_stylesheet_directory() . '/inc/enqueue-assets.php';() . '/inc/enqueue-assets.php';";
         if (strpos($functions, $enqueueLine) === false) {
             file_put_contents($functionsPath, $functions . PHP_EOL . $enqueueLine);
         }
