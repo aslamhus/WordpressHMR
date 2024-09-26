@@ -15,7 +15,7 @@ const RemoveEmptyScriptsPlugin = require('webpack-remove-empty-scripts');
 const assetsJson = require('./resources/assets/assets.json');
 const assets = console.log('assetsJson', assetsJson.assets);
 // get the theme path from the assets.json
-const { themePath } = assetsJson.config;
+const { theme } = assetsJson.config;
 // get the resources path (where your theme and assets are located)
 const resourcesPath = './resources';
 // create the entry points from the assets.json
@@ -40,8 +40,8 @@ const entry = Object.entries(assetsJson.assets).reduce((acc, entry) => {
  */
 
 console.log('entry', entry);
-console.log('themePath', themePath);
-console.log('path', path.resolve(path.resolve(__dirname) + '/public' + themePath));
+console.log('theme', theme);
+path.resolve(path.resolve(__dirname) + '/public' + '/wp-content/themes/' + theme);
 
 module.exports = {
   // ...defaultConfig,
@@ -52,8 +52,8 @@ module.exports = {
     },
     output: {
       clean: false,
-      path: path.resolve(path.resolve(__dirname) + '/public' + themePath),
-      publicPath: `${themePath}/`,
+      path: path.resolve(path.resolve(__dirname) + '/public' + '/wp-content/themes/' + theme),
+      publicPath: `/wp-content/themes/${theme}/`,
     },
 
     plugins: [
@@ -69,7 +69,7 @@ module.exports = {
         patterns: [
           {
             from: path.resolve(process.cwd(), 'resources'),
-            to: path.resolve(path.resolve(__dirname) + '/public' + themePath),
+            to: path.resolve(path.resolve(__dirname) + '/public' + '/wp-content/themes/' + theme),
             globOptions: {
               ignore: ['**/js/**', '**/scss/**', '**/node_modules/**'],
             },

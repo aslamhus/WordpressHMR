@@ -12,10 +12,11 @@ use Aslamhus\WordpressHMR\EnqueueAssets;
 // get assets json
 // load assets json file and return it as an associative array
 $path =  '/assets/assets.json';
-if(!file_exists(get_parent_theme_file_path($path))) {
+$path = get_stylesheet_directory() . $path;
+if (!file_exists($path)) {
     throw new \Exception("assets.json does not exist at " . $path);
 }
-$jsonString = file_get_contents(get_parent_theme_file_path($path));
+$jsonString = file_get_contents($path);
 $assetsJson =  json_decode($jsonString, true);
 
 $enqueuer = new EnqueueAssets($assetsJson);

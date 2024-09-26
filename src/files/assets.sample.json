@@ -5,7 +5,7 @@
     "site": "http://local.mysite:8888",
     "port": "8888",
     "protocol": "http",
-    "themePath": "/wp-content/themes/my-custom-theme"
+    "theme": "my-theme"
   },
   "assets": {
     "enqueue_block_editor_assets": [
