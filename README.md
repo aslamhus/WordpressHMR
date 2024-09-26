@@ -14,6 +14,13 @@ Currently, this package only supports HMR for a single entry point per page. Thi
 
 Because of the entry point limitation, I recommend packaging your scripts into an editor and a screen script (this is also how Wordpress' `wp-scripts` operates). You could also package your scripts into a single entry point and use dynamic imports to load your scripts on demand.
 
+### Potential Solutions to the Entry Point Limitation
+
+- Use dynamic imports to load your scripts on demand.
+- Package your scripts into an editor and a screen script.
+- Add a script when the development server is started to combine all scripts into a single entry point.
+- try creating multiple instances of the development server for each hook.
+
 ### Build Process
 
 This package is still useful as a conditional enqueuing tool for your theme. While HMR may not be possible for multiple entry points, the build process works seamlessly with multiple entry points and conditional enqueueing. You can define your assets in the `assets.json` file and run `npm run build` to generate the necessary asset files. Please see the [Define your own assets for your theme](#define-your-own-assets-for-your-theme) section below for more information.
@@ -32,7 +39,7 @@ This package is still useful as a conditional enqueuing tool for your theme. Whi
     "site": "http://local.mysite:8888",
     "port": "8888",
     "protocol": "http",
-    "themePath": "/wp-content/themes/my-custom-theme"
+    "theme": "my-custom-theme"
   },
   "assets": {
     "enqueue_block_editor_assets": [
@@ -201,7 +208,7 @@ Once you have completed the pre-installation instructions above, you are ready t
        "site": "http://local.mysite:8888",
        "port": "8888",
        "protocol": "http",
-       "themePath": "/wp-content/themes/my-custom-theme"
+       "theme": "my-custom-theme"
      }
    }
    ```
@@ -270,7 +277,7 @@ The `assets.json` file is where you define your assets. It is a simple JSON file
 - `host` - This is the host of your local development server.
 - `port` - This is the port of your local development server.
 - `protocol` - This is the protocol of your local development server.
-- `themePath` - This is the path to your theme directory.
+- `theme` - This is the name of your theme directory, i.e. twentytwentyfour
 
 ### Assets
 
@@ -340,6 +347,29 @@ Let's add some styles to our theme which we only want to appear on our custom te
 You're done! Try changing the styles in your `my-custom-template.scss` file and see the changes reflected in your browser only on pages that use the "My Custom Template" page template.
 
 For a list of condition functions that you can use, see the [Wordpress Conditional Tags](https://developer.wordpress.org/themes/basics/conditional-tags/).
+
+## Updating the child theme
+
+By default, the package uses twentytwentyfour as the active theme. To use a different theme, you must do the following:
+
+1. Change the active theme in wp-admin by going to `Appearance > Themes` and activating your custom theme.
+
+2. Change the theme name in the `assets.json` files. The theme name should match the name of your theme directory, i.e. twentywentfour or twentytwentyone (see wp-content/themes).
+
+   ```json
+   {
+     "config": {
+       "theme": "my-theme"
+     }
+   }
+   ```
+
+## A note on block theme hooks
+
+When enqueuing assets for block themes, you will need to use the following hooks:
+
+`enqueue_block_editor_assets` - to load only in editor view
+`enqueue_block_assets` - loads both on frontend and editor view
 
 ## Modifying the Webpack configurations
 
