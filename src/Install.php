@@ -58,7 +58,9 @@ class Install
 
     private static function log($message)
     {
-        ob_flush();
+        if (ob_get_level() > 0) {
+            ob_flush();
+        }
         flush();
         echo $message . PHP_EOL;
     }
