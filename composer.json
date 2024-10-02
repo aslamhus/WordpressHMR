@@ -18,6 +18,6 @@
     "phpunit/phpunit": "^9.6"
   },
   "scripts": {
-    "test-install": "Aslamhus\\WordpressHMR\\Install::postPackageInstall"
+    "test-install": "phpunit test/TestEnqueueAssets.php"
   }
 }

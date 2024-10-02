@@ -7,6 +7,6 @@ class TestEnqueueAssets extends TestCase
 {
     public function testPostPackageInstall()
     {
-        Install::postPackageInstall();
+        Install::postPackageInstall('');
     }
 }

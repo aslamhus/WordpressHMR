@@ -8,7 +8,7 @@ Defining and enqueing assets is as simple as managing a single `assets.json` fil
 
 ## Disclaimer
 
-Currently, this package only supports HMR for a single entry point per page. This means that if you have multiple entry points on a single page, only the first entry point will be hot reloaded. This is a limitation of `Webpack` and is not something that can be easily fixed. If you have multiple entry points on a single page, you will need to reload the page to see changes to the other entry points. I am open to suggestions on how to improve this. Please feel free to submit a pull request or open an issue.
+Currently, this package only supports HMR for a single entry point per page. This means that if you have multiple entry points on a single page, only the first entry point will be hot reloaded. This is a limitation of `Webpack` and is not something that can be easily fixed.
 
 ### Recommendations
 
@@ -23,7 +23,7 @@ Because of the entry point limitation, I recommend packaging your scripts into a
 
 ### Build Process
 
-This package is still useful as a conditional enqueuing tool for your theme. While HMR may not be possible for multiple entry points, the build process works seamlessly with multiple entry points and conditional enqueueing. You can define your assets in the `assets.json` file and run `npm run build` to generate the necessary asset files. Please see the [Define your own assets for your theme](#define-your-own-assets-for-your-theme) section below for more information.
+This package is acts as a conditional enqueuing tool for your theme. While HMR may not be possible for multiple entry points, the build process still works seamlessly with multiple entry points and conditional enqueueing. You can define your assets in the `assets.json` file and run `npm run build` to generate the necessary asset files. Please see the [Define your own assets for your theme](#define-your-own-assets-for-your-theme) section below for more information.
 
 ### Why not just use `wp-scripts`?
 
@@ -75,6 +75,8 @@ Conditional enqueuing can get complicated, so let's break it down with examples.
 
 ##### Example 1: Enqueue a script only on the block editor
 
+In this example, we only want to enqueue a script in the block editor. We set the path to the script file as well as the extension. We don't need to specify a condition for this script, as it will be enqueued in the block editor by default.
+
 ```json
 {
   "assets": {
@@ -91,6 +93,8 @@ Conditional enqueuing can get complicated, so let's break it down with examples.
 
 ##### Example 2: Enqueue a script only on the front end
 
+Same as above, but we want to enqueue a script only on the front end. We use the `wp_enqueue_scripts` hook to enqueue the script.
+
 ```json
 {
   "assets": {
@@ -105,6 +109,8 @@ Conditional enqueuing can get complicated, so let's break it down with examples.
 ```
 
 ##### Example 3: Enqueue a script only on a specific page template
+
+In this example, we only want to enqueue a script on a specific page template. We use the `get_page_template_slug` function to get the page template slug and compare it to our custom template slug.
 
 ```json
 {
@@ -153,10 +159,10 @@ This will evaluate to `get_the_title(get_the_id()) === 'about'`.
 
 #### Example: MAMP
 
-Create local domain for your wordpress site. For example `localhost.mysite` where
+Create a local domain for your wordpress site. For example `localhost.mysite` where
 the document root is the public folder of your wordpress site `project-root/public`
 
-1. If using MAMP, Add the following to your `httpd-vhosts.conf` file.
+1. Add the following virtual host configuration for your apache server (MAMP)
 
    ```bash
    <VirtualHost *:8888>
@@ -181,7 +187,7 @@ Once you have completed the pre-installation instructions above, you are ready t
    composer require aslamhus/wordpress-hmr
    ```
 
-2. Run the installer script. You can find installer.php file in the package's root directory (vendor/aslamhus/wordpress-hmr/installer.php). Move this file to the root directory of your wordpress site and run it on the command line. This will install the necessary files in your theme directory as well as the wepback configuration files.
+2. Run the installer script. You can find installer.php file in the package's root directory (vendor/aslamhus/wordpress-hmr/installer.php). Move this file to the **_root_** directory of your project and run it on the command line.
 
    ```bash
    # cd into your project root
@@ -192,7 +198,17 @@ Once you have completed the pre-installation instructions above, you are ready t
    php installer.php
    ```
 
-3. Install `npm` dependencies. This will install the necessary packages for development.
+   The installer will create the following folders:
+
+   - `public` directory, with the latest version of wordpress installed. The installer will also prompt you to create a custom theme directory with the name you specify.
+   - `resources` directory where all your theme files will reside. Webpack copies all the files from your resources folder to the current active theme.
+   - `assets` directory where your `assets.json` file and css / scss files will reside.
+   - `inc` directory where the `enqueue-assets.php` and `functions.php` file will reside.
+   - `js` directory where your entry points will reside.
+   - `style.css` file in the root of your theme directory with the template name of your custom theme.
+
+3. Install `npm` dependencies.
+   dThis will install the necessary webpack packages for development with HMR enabled.
 
    ```bash
    npm install
@@ -227,7 +243,7 @@ Once you have completed the pre-installation instructions above, you are ready t
 
 ### Develop with HMR
 
-1. Start `apache` server with MAMP/WAMP/XAMP.
+1. Start your local server.
 
 2. Start the proxy (development) server
 
