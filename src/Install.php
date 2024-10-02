@@ -16,28 +16,61 @@ namespace Aslamhus\WordpressHMR;
  *   |  |___|__ bin
  *
  */
+
+
+
 class Install
 {
     public static function postPackageInstall(string $root = "")
     {
-        echo 'installing...';
+
+
+        self::log("Starting post package install");
         $root = $root ?? __DIR__;
         // check that vendor exists in the root directory
         if (!file_exists($root . 'vendor')) {
-            echo "Vendor directory not found in the root directory. Please run composer install";
+            self::log("Vendor directory not found in the root directory. Please run composer install");
             return;
         }
         // create public directory and install wordpress if it does not exist
         self::createPublicDirectory($root);
-        // install resources directory with latest wordpress theme
-        self::copyWordpressChildThemeToResources($root);
+        // load wp
+        self::loadWPFunctions($root);
+        // get themes and list them
+        $themes = self::printThemes($root);
+        // create child theme directory in public/wp-content/themes
+        $chosenTheme = self::chooseParentTheme($root, $themes);
+        // create child theme directory in public/wp-content/themes
+        $childTheme = self::createChildTheme($root, $chosenTheme);
         // Install files based on the install-manifest.json
         self::installManifestFiles($root);
+        // add style.css to resources directory
+        self::addStylesheetToResources($root, $childTheme);
+        // update assets.json with the child theme name
+        self::updateAssetsJson($root, $childTheme);
+        // now copy the resources directory contents to the child theme
+        self::copyResourcesToChildTheme($root, $childTheme);
         // install package.json or add scripts/dependencies to existing package.json
         self::installPackageJson($root);
-        // finally add enquue-assets to functions.php
-        self::addEnqueueAssetsToFunctions($root);
+        // end
+        self::log('Installation complete! Please update your assets.sample.json file with the correct values and rename it to assets.json');
     }
+
+    private static function log($message)
+    {
+        ob_flush();
+        flush();
+        echo $message . PHP_EOL;
+    }
+
+    private static function read($prompt): string
+    {
+
+        self::log($prompt);
+        self::log(''); // add a new line
+        return trim(fgets(STDIN));
+    }
+
 
     private static function createPublicDirectory($root)
     {
@@ -64,26 +97,128 @@ class Install
                 }
                 // delete the wordpress directory
                 rmdir($root . 'public/wordpress');
-                echo 'Wordpress unzipped successfully';
+                self::log('Wordpress unzipped successfully');
             } else {
-                echo 'Wordpress unzipped failed';
+                self::log('Wordpress unzipped failed');
             }
         } else {
-            echo 'Public directory already exists';
+            self::log('Public directory already exists');
+
         }
+
     }
 
-    private static function copyWordpressChildThemeToResources($root)
+    private static function loadWPFunctions($root)
     {
-        // install resources directory with latest wordpress theme
-        if (!file_exists($root . 'resources')) {
-            mkdir($root . 'resources', 0775, true);
-            // copy latest wordpress theme directory (twentytwentyfour) from public directory
-            self::recursiveCopyDirectory($root . 'public/wp-content/themes/twentytwentyfour', $root . 'resources/');
+        // if (!file_exists($root . 'public/wp-load.php')) {
+        //     throw new Exception('wp-load.php does not exist in public directory, please check that wordpress was installed correctly at ' . $root . 'public');
+        // }
+        // require_once $root . 'public/wp-load.php';
+    }
+
+
+    private static function printThemes($root)
+    {
+        $themes = self::getThemes($root);
+        // find list of themes in public/wp-content/themes
+        $themes = self::getThemes($root);
+        self::log('Themes found in public/wp-content/themes');
+        self::log('-----------------------------');
+        foreach ($themes as $index => $theme) {
+            self::log($index + 1 . '. '.$theme);
+        }
+        self::log('-----------------------------');
+        return $themes;
+    }
+
+
+
+    private static function getThemes($root): array
+    {
+        $themes = [];
+        $it = new \FilesystemIterator($root . 'public/wp-content/themes');
+        foreach ($it as $fileinfo) {
+            $file = $fileinfo->getFilename();
+            // self::log('Found theme: ' . $file . ' is_dir: ' . is_dir($root . 'public/wp-content/themes/' . $file));
+            if (is_dir($root . 'public/wp-content/themes/' . $file) !== true) {
+                continue;
+            }
+            $themes[] = $file;
+        }
+        return $themes;
+    }
+
+    private static function chooseParentTheme($root, $themes)
+    {
+
+        // ask user to choose a theme
+        $chosenThemeIndex = self::read('Choose parent theme (you can change this later): ');
+        $chosenTheme = $themes[$chosenThemeIndex - 1];
+        if (empty($chosenTheme)) {
+            self::log('Theme does not exist');
+            return self::chooseParentTheme($root, $themes);
+        }
+        // check if the theme exists
+        if (!file_exists($root . 'public/wp-content/themes/' . $chosenTheme)) {
+            self::log('Theme does not exist');
+            return self::chooseParentTheme($root, $themes);
+        }
+        return $chosenTheme;
+
+    }
+
+    private static function createChildTheme($root, $parentTheme)
+    {
+
+        // ask user to choose a child theme name
+        $childThemeName = self::read('Enter child theme name (no spaces or special characters): ');
+        // remove special characters and spaces
+        $childThemeName = preg_replace('/[^A-Za-z0-9\-]/', '', $childThemeName);
+        // make child theme dir
+        if (!file_exists($root . 'public/wp-content/themes/' . $childThemeName)) {
+            mkdir($root . 'public/wp-content/themes/' . $childThemeName, 0775, true);
         } else {
-            echo 'Resources directory already exists';
+            self::log('Child theme already exists');
         }
 
+
+
+        return $childThemeName;
+
+    }
+
+    private static function copyResourcesToChildTheme($root, $childTheme)
+    {
+        // // install resources directory with latest wordpress theme
+        // if (!file_exists($root . 'resources')) {
+        //     mkdir($root . 'resources', 0775, true);
+        // copy latest wordpress theme directory (twentytwentyfour) from public directory
+        self::recursiveCopyDirectory($root . 'resources', $root . 'public/wp-content/themes/'.$childTheme . '/');
+        // } else {
+        //     self::log('Resources directory already exists');
+        // }
+
+    }
+
+    private static function addStylesheetToResources($root, $childTheme)
+    {
+        // add style.css to resources directory
+        if (!file_exists($root . 'resources/style.css')) {
+            $style = '/*' . PHP_EOL;
+            $style .= 'Theme Name: ' . $childTheme . PHP_EOL;
+            $style .= 'Theme URI: ' . PHP_EOL;
+            $style .= 'Description: ' . PHP_EOL;
+            $style .= 'Author: ' . PHP_EOL;
+            $style .= 'Author URI: ' . PHP_EOL;
+            $style .= 'Version: 1.0.0' . PHP_EOL;
+            $style .= 'License: GNU General Public License v2 or later' . PHP_EOL;
+            $style .= 'License URI: http://www.gnu.org/licenses/gpl-2.0.html' . PHP_EOL;
+            $style .= 'Text Domain: ' . $childTheme . PHP_EOL;
+            $style .= '*/' . PHP_EOL;
+            file_put_contents($root . 'resources/style.css', $style);
+        } else {
+            self::log('Style.css already exists');
+        }
     }
 
     private static function recursiveCopyDirectory(string $src, string $dst)
@@ -107,18 +242,22 @@ class Install
         $manifest = json_decode(file_get_contents(__DIR__ . '/install-manifest.json'), true);
 
         foreach ($manifest as $file) {
-            list($filename, $relativePath) = $file;
+            list($filename, $filepath) = $file;
+            self::log("Installing $filename to $filepath");
             // validate relative path exists
-            if (!file_exists($root . $relativePath)) {
-                mkdir($root . $relativePath, 0775, true);
+            if (!file_exists($root . $filepath) && !empty($filepath)) {
+                try {
+                    mkdir($root . $filepath, 0775, true);
+                } catch (\Exception $e) {
+                    self::log("Error creating directory: '" . $root . $filepath ."'. Error: " . $e->getMessage());
+                    exit;
+                }
             }
             $src = __DIR__ . '/files' . '/' . $filename;
-            $destination = $root . $relativePath . $filename;
+            $destination = $root . $filepath . $filename;
             // if the file does not already exist, copy it
             if (!file_exists($destination)) {
                 copy($src, $destination);
-            } else {
-                echo "File already exists: $destination \n\n";
             }
 
         }
@@ -138,16 +277,29 @@ class Install
             if (!isset($package['scripts'])) {
                 $package['scripts'] = [];
             }
-            foreach ($scripts as $script) {
+            foreach ($scripts as $key => $value) {
                 // skip script if it already exists
-                if (isset($package['scripts'][$script])) {
+                if (isset($package['scripts'][$key])) {
                     continue;
                 }
-                $package['scripts'][$script] = $scripts[$script];
+                $package['scripts'][$key] = $value;
             }
             $package['devDependencies'] = $devDependencies;
             file_put_contents($root . 'package.json', json_encode($package, JSON_PRETTY_PRINT));
         }
+    }
+
+
+    private static function updateAssetsJson($root, $childTheme)
+    {
+        $path = $root . 'resources/assets/assets.sample.json';
+        if (!file_exists($path)) {
+            throw new \Exception("assets.json does not exist at " . $path);
+        }
+        $jsonString = file_get_contents($path);
+        $assetsJson =  json_decode($jsonString, true);
+        $assetsJson['config']['theme'] = $childTheme;
+        file_put_contents($path, json_encode($assetsJson, JSON_PRETTY_PRINT));
     }
 
     /**
