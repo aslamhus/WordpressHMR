@@ -1,6 +1,6 @@
 {
   "config": {
-    "handlePrefix": "custom-asset",
+    "handlePrefix": "my-asset",
     "host": "local.mysite",
     "site": "http://local.mysite:8888",
     "port": "8888",
