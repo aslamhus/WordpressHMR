@@ -28,6 +28,10 @@ class EnqueueAssets
         if (!file_exists($wordpressPath . '/wp-load.php')) {
             throw new \Exception("wp-load.php not found at " . $wordpressPath);
         }
+        // prevent wp-load from producing warning: "Undefined index: HTTP_HOST"
+        if (PHP_SAPI === 'cli') {
+            $_SERVER['HTTP_HOST'] ??= '';
+        }
 
         require_once $wordpressPath . '/wp-load.php';
         // get the environment type
