@@ -315,6 +315,7 @@ An array of script objects. Each script object contains the following properties
 - `hooks` - An array of hooks where the script will be enqueued.
 - `path` - The path to the script file.
 - `ext` - The file extension of the script file.
+- `dependencies` - An array of dependencies the script requires.
 - `condition` - a condition expression, which is an array of 3 elements. The first element is the function name, the second element is the function argument, and the third element is the expected value. If the condition is met, the script will be enqueued. For more on conditional enqueuing, see the [Conditional enqueuing](#conditional-enqueuing) section below.
 
 ```json
@@ -324,7 +325,8 @@ An array of script objects. Each script object contains the following properties
       {
         "handle": "editor-js",
         "path": "/js/editor",
-        "ext": "js"
+        "ext": "js",
+        "dependencies": ["wp-hooks"]
       }
     ],
     "wp_enqueue_scripts": [
