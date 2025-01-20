@@ -111,8 +111,10 @@ Same as above, but we want to enqueue a script only on the front end. We use the
 ##### Example 3: Enqueue a script only on a specific page template
 
 In this example, we only want to enqueue a script on a specific page template. We use the `get_page_template_slug` function to get the page template slug and compare it to our custom template slug.
+You can find the page template slug by looking at the classname of the body tag of any page given the template.
 
 ```json
+// for custom template
 {
   "assets": {
     "wp_enqueue_scripts": [
@@ -124,6 +126,16 @@ In this example, we only want to enqueue a script on a specific page template. W
     ]
   }
 }
+// for default page template
+  {
+        "handle": "pages-feature-image",
+        "path": "/js/templates/pages-feature-image.js",
+        "ext": "js",
+
+        "condition": ["get_page_template_slug", null, "page-template-default"]
+      }
+
+
 ```
 
 ##### Example 4: Use a conditional argument that takes the result of a function as an argument
