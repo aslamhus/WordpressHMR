@@ -135,7 +135,13 @@ You can find the page template slug by looking at the classname of the body tag 
         "condition": ["get_page_template_slug", null, "page-template-default"]
       }
 
-
+// for custom post type
+{
+    "handle": "instructor-js",
+    "path": "/js/instructor-single",
+    "ext": "js",
+    "condition": ["get_post_type", ["function", "get_the_id"], "custom-instructors"]
+  }
 ```
 
 ##### Example 4: Use a conditional argument that takes the result of a function as an argument
