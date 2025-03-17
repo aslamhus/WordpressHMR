@@ -8,5 +8,5 @@
   ["webpack.common.js", ""],
   ["webpack.dev.js", ""],
   ["webpack.prod.js", ""],
-  ["functions.php", "resources/inc/"]
+  ["functions.php", "resources/"]
 ]
