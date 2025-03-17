@@ -7,7 +7,7 @@ const defaultConfig = require('@wordpress/scripts/config/webpack.config');
  * Get the assets.json file config
  */
 const assetsJson = require('./resources/assets/assets.json');
-const { themePath } = assetsJson.config;
+const { theme } = assetsJson.config;
 // create proxy i.e. http://local.coryweeds:8888
 const { host, port, protocol } = assetsJson.config;
 const proxy = `${protocol || 'http'}://${host}${port ? `:${port}` : ''}`;
@@ -45,7 +45,7 @@ module.exports = merge(common, {
     liveReload: false,
     devMiddleware: {
       index: true,
-      publicPath: path.resolve(path.resolve(__dirname) + '/public' + themePath),
+      publicPath: path.resolve(path.resolve(__dirname) + '/public' + theme),
       serverSideRender: false,
       writeToDisk: (filePath) => {
         console.log('********** filePath', filePath);
@@ -53,7 +53,7 @@ module.exports = merge(common, {
       },
     },
     static: {
-      directory: path.resolve(__dirname, '../../'),
+      directory: path.resolve(__dirname, '/'),
       staticOptions: {},
       publicPath: '/',
     },
