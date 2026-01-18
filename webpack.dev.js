@@ -37,7 +37,7 @@ module.exports = merge(common, {
       },
       {
         reload: false,
-      }
+      },
     ),
   ],
   devServer: {
@@ -53,7 +53,7 @@ module.exports = merge(common, {
       },
     },
     static: {
-      directory: path.resolve(__dirname, '../../'),
+      directory: path.resolve(__dirname, '/public'),
       staticOptions: {},
       publicPath: '/',
     },
