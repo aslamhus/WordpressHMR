@@ -142,6 +142,21 @@ You can find the page template slug by looking at the classname of the body tag 
     "ext": "js",
     "condition": ["get_post_type", ["function", "get_the_id"], "custom-instructors"]
   }
+
+// get the id of the page
+{
+ "condition": ["get_the_id", null, "2039"]
+}
+
+// targeting block editor styles only
+ "enqueue_block_assets": [
+      {
+        "handle": "editor-js",
+        "path": "/js/editor",
+        "ext": "js",
+        "condition": ["is_admin", null, true]
+      }
+    ],
 ```
 
 ##### Example 4: Use a conditional argument that takes the result of a function as an argument
@@ -216,23 +231,19 @@ Once you have completed the pre-installation instructions above, you are ready t
    php installer.php
    ```
 
-   The installer will create the following folders:
-
+   The installer will create the following folders/files:
    - `public` directory, with the latest version of wordpress installed. The installer will also prompt you to create a custom theme directory with the name you specify.
    - `resources` directory where all your theme files will reside. Webpack copies all the files from your resources folder to the current active theme.
    - `assets` directory where your `assets.json` file and css / scss files will reside.
    - `inc` directory where the `enqueue-assets.php` and `functions.php` file will reside.
    - `js` directory where your entry points will reside.
    - `style.css` file in the root of your theme directory with the template name of your custom theme.
+   - `screenshot.png` - the chosen parent theme's screenshot
+   - `theme.json` - the chosen parent theme's theme.json
 
-3. Install `npm` dependencies.
-   dThis will install the necessary webpack packages for development with HMR enabled.
+   The install will then instal npm dependencies and build your asset files, executing the commands `npm install && npm run build`
 
-   ```bash
-   npm install
-   ```
-
-4. Rename `assets.sample.json` file to `assets.json` and configure it with your development settings (see pre-installation instructions above for setting up your apache server and defining a local domain for your wordpress site)
+3. Rename `assets.sample.json` file to `assets.json` and configure it with your development settings (see pre-installation instructions above for setting up your apache server and defining a local domain for your wordpress site)
 
    ```json
    {
@@ -249,7 +260,7 @@ Once you have completed the pre-installation instructions above, you are ready t
 
    For more details on the `config` object properties, see the [Define your own assets for your theme](#define-your-own-assets-for-your-theme) section below.
 
-5. Generate `wp-scripts` asset dependencies.
+4. Generate `wp-scripts` asset dependencies.
 
    Before we get started with development, we need `wp-scripts` to do some setup. Run the following command to generate the necessary asset files.
 
