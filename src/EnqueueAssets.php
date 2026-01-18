@@ -28,8 +28,13 @@ class EnqueueAssets
         }
         // prevent wp-load from producing warning: "Undefined index: HTTP_HOST"
         if (PHP_SAPI === 'cli') {
+
             $_SERVER['HTTP_HOST'] ??= '';
+
         }
+        // Note: There is an error where wp-load.php is being required twice
+        // and giving warnings:
+        // i.e. Warning: Constant DB_NAME already defined
         // the public build path defines where the assets are built
         // the public directory is where your wordpress installation is
         require_once $wordpressPath . '/wp-load.php';
