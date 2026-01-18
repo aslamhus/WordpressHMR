@@ -45,13 +45,23 @@ class Install
         // Install files based on the install-manifest.json
         self::installManifestFiles($root);
         // add style.css to resources directory
-        self::addStylesheetToResources($root, $childTheme);
+        self::addStylesheetToResources($root, $childTheme, $chosenTheme);
         // update assets.json with the child theme name
         self::updateAssetsJson($root, $childTheme);
+         // get all releveant files from chosen theme and add them to resources directory
+        self::addParentThemeFiles($root, $chosenTheme);
         // now copy the resources directory contents to the child theme
         self::copyResourcesToChildTheme($root, $childTheme);
+       
         // install package.json or add scripts/dependencies to existing package.json
         self::installPackageJson($root);
+        // set active theme
+        switch_theme( $childTheme);
+        // build asset files
+
+        self::log("Running npm run build to create asset files");
+        exec("npm install && run build");
+        // update_option('current_theme', $childTheme);
         // end
         self::log('Installation complete! Please update your assets.sample.json file with the correct values and rename it to assets.json');
     }
@@ -112,10 +122,10 @@ class Install
 
     private static function loadWPFunctions($root)
     {
-        // if (!file_exists($root . 'public/wp-load.php')) {
-        //     throw new Exception('wp-load.php does not exist in public directory, please check that wordpress was installed correctly at ' . $root . 'public');
-        // }
-        // require_once $root . 'public/wp-load.php';
+        if (!file_exists($root . 'public/wp-load.php')) {
+            throw new Exception('wp-load.php does not exist in public directory, please check that wordpress was installed correctly at ' . $root . 'public');
+        }
+        require_once $root . 'public/wp-load.php';
     }
 
 
@@ -154,12 +164,18 @@ class Install
     {
 
         // ask user to choose a theme
-        $chosenThemeIndex = self::read('Choose parent theme (you can change this later): ');
+        $chosenThemeIndex = self::read('Enter parent theme number (you can change this later): ');
+         if(!filter_var($chosenThemeIndex, FILTER_VALIDATE_INT)){
+             self::log("Please enter a number (found:$chosenThemeIndex)");
+            return self::chooseParentTheme($root, $themes);
+        }
         $chosenTheme = $themes[$chosenThemeIndex - 1];
-        if (empty($chosenTheme)) {
+        if (empty($chosenTheme) ) {
             self::log('Theme does not exist');
             return self::chooseParentTheme($root, $themes);
         }
+        
+       
         // check if the theme exists
         if (!file_exists($root . 'public/wp-content/themes/' . $chosenTheme)) {
             self::log('Theme does not exist');
@@ -189,6 +205,17 @@ class Install
 
     }
 
+    private static function addParentThemeFiles($root, $chosenTheme){
+        $files = ['theme.json', 'screenshot.png'];
+        $themeRoot = $root . 'public/wp-content/themes/' . $chosenTheme;
+        $resourcesRoot = $root . 'resources';
+        foreach($files as $file){
+           
+            copy($themeRoot . '/' . $file, $resourcesRoot . '/' . $file);
+            // $root . 'resources/style.css
+        }
+    }
+
     private static function copyResourcesToChildTheme($root, $childTheme)
     {
         // // install resources directory with latest wordpress theme
@@ -202,12 +229,13 @@ class Install
 
     }
 
-    private static function addStylesheetToResources($root, $childTheme)
+    private static function addStylesheetToResources($root, $childTheme, $chosenTheme)
     {
         // add style.css to resources directory
-        if (!file_exists($root . 'resources/style.css')) {
+        // if (!file_exists($root . 'resources/style.css')) {
             $style = '/*' . PHP_EOL;
             $style .= 'Theme Name: ' . $childTheme . PHP_EOL;
+            $style .= 'Template: ' . $chosenTheme . PHP_EOL;
             $style .= 'Theme URI: ' . PHP_EOL;
             $style .= 'Description: ' . PHP_EOL;
             $style .= 'Author: ' . PHP_EOL;
@@ -218,9 +246,9 @@ class Install
             $style .= 'Text Domain: ' . $childTheme . PHP_EOL;
             $style .= '*/' . PHP_EOL;
             file_put_contents($root . 'resources/style.css', $style);
-        } else {
-            self::log('Style.css already exists');
-        }
+        // } else {
+        //     self::log('Style.css already exists');
+        // }
     }
 
     private static function recursiveCopyDirectory(string $src, string $dst)
@@ -294,10 +322,18 @@ class Install
 
     private static function updateAssetsJson($root, $childTheme)
     {
-        $path = $root . 'resources/assets/assets.sample.json';
+        $sample = $root . 'resources/assets/assets.sample.json';
+        $assets = $root . 'resources/assets/assets.json';
+        self::updateAssetsJsonConfig($sample, $childTheme);
+        self::updateAssetsJsonConfig($assets, $childTheme);
+        
+    }
+
+    private static function updateAssetsJsonConfig($path, $childTheme){
+       
         if (!file_exists($path)) {
             throw new \Exception("assets.json does not exist at " . $path);
-        }
+        } 
         $jsonString = file_get_contents($path);
         $assetsJson =  json_decode($jsonString, true);
         $assetsJson['config']['theme'] = $childTheme;
