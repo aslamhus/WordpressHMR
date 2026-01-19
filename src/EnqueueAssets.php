@@ -98,6 +98,9 @@ class EnqueueAssets
                     // 2. src
                     // 3. dependencies
                     // 4. version
+
+                    list($handle, $src, $deps, $ver,$args) = $enqueueArgs;
+         
                     $enqueueArgs[1] = get_stylesheet_directory_uri() . $enqueueArgs[1];
                     // check if the condition is met
                     if (!$this->evalCondition($condition)) {
@@ -110,7 +113,10 @@ class EnqueueAssets
                     }
                     $this->isEnqueued->$path = true;
                     // enqueue the asset
-                    call_user_func($func_name, ...$enqueueArgs);
+                    call_user_func($func_name, $handle, get_stylesheet_directory_uri() . $src, $deps, $ver, $args);
+                    // enqueue accompanying stylesheet, if it exists
+                    self::enqueueAccompanyingStylesheet_dev($handle,$src,$deps,$ver);
+                
                 }
             }, $priority, 0);
         }
@@ -144,6 +150,8 @@ class EnqueueAssets
             foreach ($queueItems as $queueItem) {
                 $func_name = $queueItem[0];
                 $enqueueArgs = $queueItem[1];
+
+                    list($handle, $src, $deps, $ver,$args) = $enqueueArgs;
                 $condition = $queueItem[2] ?? null;
                 $enqueueArgs[1] = "\$themepath". $enqueueArgs[1];
                 $argsArrayString = json_encode($enqueueArgs, JSON_UNESCAPED_SLASHES);
@@ -161,14 +169,35 @@ class EnqueueAssets
                     $content .= "if($statement($argument) == $value) {\n";
                     // enqueue the asset
                     $content .= "$func_name(...$argsArrayString);\n";
+                    
+                    // enqueue accompanying stylesheet, if it exists
+                    $content .= self::enqueueAccompanyingStylesheet_build($handle, $src, $deps, $ver);
                     $content .= "}\n";
                 } else {
                     $content .= "$func_name(...$argsArrayString);\n";
+                    $content .= self::enqueueAccompanyingStylesheet_build($handle, $src, $deps, $ver);
                 }
             }
             $content .= "});\n\n";
         }
         file_put_contents($enqueueAssetsFile, $content);
+    }
+
+    private static function enqueueAccompanyingStylesheet_build($handle, $src, $deps, $ver) : string{
+        // enqueue accompanying stylesheet, if it exists
+       $cssSrc = str_replace('.js', '.css', $src);
+        if(file_exists(get_stylesheet_directory() . $cssSrc)){
+            return "wp_enqueue_style('".$handle . "-style', get_stylesheet_directory_uri() . '".$cssSrc."', ".json_encode($deps).", '$ver');\n";
+        } 
+        return '';
+    }
+
+    private static function enqueueAccompanyingStylesheet_dev($handle, $src, $deps, $ver) : void{
+        // enqueue accompanying stylesheet, if it exists
+      $cssSrc = str_replace('.js', '.css', $src);
+        if(file_exists(get_stylesheet_directory() . $cssSrc)){
+            wp_enqueue_style($handle . '-style', get_stylesheet_directory_uri() . $cssSrc, $deps, $ver);
+        } 
     }
 
     /**
