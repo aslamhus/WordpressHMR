@@ -123,7 +123,7 @@ class Install
     private static function loadWPFunctions($root)
     {
         if (!file_exists($root . 'public/wp-load.php')) {
-            throw new Exception('wp-load.php does not exist in public directory, please check that wordpress was installed correctly at ' . $root . 'public');
+            throw new \Exception('wp-load.php does not exist in public directory, please check that wordpress was installed correctly at ' . $root . 'public');
         }
         require_once $root . 'public/wp-load.php';
     }
