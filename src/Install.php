@@ -21,50 +21,60 @@ namespace Aslamhus\WordpressHMR;
 
 class Install
 {
-    public static function postPackageInstall(string $root = "")
+
+
+ public static function postPackageInstall(string $root = "")
     {
 
-
-        self::log("Starting post package install");
-        $root = $root ?? __DIR__;
-        // check that vendor exists in the root directory
-        if (!file_exists($root . 'vendor')) {
-            self::log("Vendor directory not found in the root directory. Please run composer install");
-            return;
-        }
-        // create public directory and install wordpress if it does not exist
-        self::createPublicDirectory($root);
-        // load wp
-        self::loadWPFunctions($root);
-        // get themes and list them
-        $themes = self::printThemes($root);
-        // create child theme directory in public/wp-content/themes
-        $chosenTheme = self::chooseParentTheme($root, $themes);
-        // create child theme directory in public/wp-content/themes
-        $childTheme = self::createChildTheme($root, $chosenTheme);
-        // Install files based on the install-manifest.json
-        self::installManifestFiles($root);
-        // add style.css to resources directory
-        self::addStylesheetToResources($root, $childTheme, $chosenTheme);
-        // update assets.json with the child theme name
-        self::updateAssetsJson($root, $childTheme);
-         // get all releveant files from chosen theme and add them to resources directory
-        self::addParentThemeFiles($root, $chosenTheme);
-        // now copy the resources directory contents to the child theme
-        self::copyResourcesToChildTheme($root, $childTheme);
-       
-        // install package.json or add scripts/dependencies to existing package.json
+    self::installManifestFiles($root);
+         // install package.json or add scripts/dependencies to existing package.json
         self::installPackageJson($root);
-        // set active theme
-        switch_theme( $childTheme);
-        // build asset files
-
-        self::log("Running npm run build to create asset files");
         exec("npm install && run build");
-        // update_option('current_theme', $childTheme);
-        // end
         self::log('Installation complete! Please update your assets.sample.json file with the correct values and rename it to assets.json');
     }
+    // public static function postPackageInstall(string $root = "")
+    // {
+
+
+    //     self::log("Starting post package install");
+    //     $root = $root ?? __DIR__;
+    //     // check that vendor exists in the root directory
+    //     if (!file_exists($root . 'vendor')) {
+    //         self::log("Vendor directory not found in the root directory. Please run composer install");
+    //         return;
+    //     }
+    //     // create public directory and install wordpress if it does not exist
+    //     self::createPublicDirectory($root);
+    //     // load wp
+    //     self::loadWPFunctions($root);
+    //     // get themes and list them
+    //     $themes = self::printThemes($root);
+    //     // create child theme directory in public/wp-content/themes
+    //     $chosenTheme = self::chooseParentTheme($root, $themes);
+    //     // create child theme directory in public/wp-content/themes
+    //     $childTheme = self::createChildTheme($root, $chosenTheme);
+    //     // Install files based on the install-manifest.json
+    //     self::installManifestFiles($root);
+    //     // add style.css to resources directory
+    //     self::addStylesheetToResources($root, $childTheme, $chosenTheme);
+    //     // update assets.json with the child theme name
+    //     self::updateAssetsJson($root, $childTheme);
+    //      // get all releveant files from chosen theme and add them to resources directory
+    //     self::addParentThemeFiles($root, $chosenTheme);
+    //     // now copy the resources directory contents to the child theme
+    //     self::copyResourcesToChildTheme($root, $childTheme);
+       
+   
+    //     // set active theme
+    //     switch_theme( $childTheme);
+    //     // build asset files
+
+    //     self::log("Running npm run build to create asset files");
+    //     exec("npm install && run build");
+    //     // update_option('current_theme', $childTheme);
+    //     // end
+    //     self::log('Installation complete! Please update your assets.sample.json file with the correct values and rename it to assets.json');
+    // }
 
     private static function log($message)
     {

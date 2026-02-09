@@ -1,5 +1,6 @@
 <?php
 
+
 /**
  * This config file is only used in development.
  * When you build the theme for production, this file is not included.
@@ -11,13 +12,11 @@ use Aslamhus\WordpressHMR\EnqueueAssets;
 
 // get assets json
 // load assets json file and return it as an associative array
-$path =  '/assets/assets.json';
-$path = get_stylesheet_directory() . $path;
+$path =  ABSPATH . '/../assets.json';
 if (!file_exists($path)) {
     throw new \Exception("assets.json does not exist at " . $path);
 }
 $jsonString = file_get_contents($path);
 $assetsJson =  json_decode($jsonString, true);
-
-$enqueuer = new EnqueueAssets($assetsJson);
+$enqueuer = new EnqueueAssets($assetsJson, ABSPATH);
 $enqueuer->enqueue();

@@ -17,14 +17,17 @@ class EnqueueAssets
     private string $handlePrefix;
     private \stdClass $isEnqueued;
     private array $queue = [];
-    public const DEFAULT_WORDPRESS_PATH = __DIR__ . '/../../../../public';
+    // the path to wordpress. build.php and enqueue-assets.php use different paths
+    public const DEFAULT_WORDPRESS_PATH = __DIR__ . '/../../../../';
 
 
     public function __construct(array $assetsJson, string $wordpressPath = self::DEFAULT_WORDPRESS_PATH)
     {
         // load wordpress functions
+        
         if (!file_exists($wordpressPath . '/wp-load.php')) {
-            throw new \Exception("wp-load.php not found at " . $wordpressPath);
+            
+            throw new \Exception("Failed to enqueue asssets. wp-load.php not found at " . $wordpressPath . ". Check the wordpress path in build.php or inc/enqueue-assets.php." );
         }
         // prevent wp-load from producing warning: "Undefined index: HTTP_HOST"
         if (PHP_SAPI === 'cli') {
@@ -52,10 +55,10 @@ class EnqueueAssets
         $configTheme = $this->config['theme'] ?? '';
         // get the theme name from the stylseheet (returns the theme directory name)
         // @see: https://developer.wordpress.org/reference/classes/wp_theme/
-        $wpTheme = wp_get_theme()->get_stylesheet();
-        if ($configTheme !== $wpTheme) {
-            throw new \Exception("The theme name in the config file ('$configTheme') does not match the theme name in the stylesheet directory ('$wpTheme'). Please make sure that the active theme and the theme set in your assets.json files match.");
-        }
+            $wpTheme = wp_get_theme()->get_stylesheet();
+            if ($configTheme !== $wpTheme) {
+                throw new \Exception("The theme name in the config file ('$configTheme') does not match the theme name in the stylesheet directory ('$wpTheme'). Please make sure that the active theme and the theme set in your assets.json files match.");
+            }
 
         // get the handle prefix
         $this->handlePrefix = $this->config['handlePrefix'] ?? "custom-asset";

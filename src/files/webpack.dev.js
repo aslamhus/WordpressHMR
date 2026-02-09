@@ -6,11 +6,13 @@ const defaultConfig = require('@wordpress/scripts/config/webpack.config');
 /**
  * Get the assets.json file config
  */
-const assetsJson = require('./resources/assets/assets.json');
-const { theme } = assetsJson.config;
+const assetsJson = require('./assets.json');
+const { theme, themePath } = assetsJson.config;
 // create proxy i.e. http://local.coryweeds:8888
 const { host, port, protocol } = assetsJson.config;
 const proxy = `${protocol || 'http'}://${host}${port ? `:${port}` : ''}`;
+let outputPath = themePath ? `/${themePath}/${theme}` : '/public' + '/wp-content/themes/' + theme;
+outputPath = path.resolve(path.resolve(__dirname) + outputPath);
 module.exports = merge(common, {
   mode: 'development',
   devtool: 'source-map', // source-map for no eval
@@ -37,7 +39,7 @@ module.exports = merge(common, {
       },
       {
         reload: false,
-      }
+      },
     ),
   ],
   devServer: {
@@ -45,7 +47,8 @@ module.exports = merge(common, {
     liveReload: false,
     devMiddleware: {
       index: true,
-      publicPath: path.resolve(path.resolve(__dirname) + '/public' + theme),
+      publicPath: outputPath,
+      // publicPath: path.resolve(path.resolve(__dirname) + '/public' + theme),
       serverSideRender: false,
       writeToDisk: (filePath) => {
         console.log('********** filePath', filePath);
@@ -53,12 +56,12 @@ module.exports = merge(common, {
       },
     },
     static: {
-      directory: path.resolve(__dirname, '/'),
+      // directory: path.resolve(__dirname, '/'),
       staticOptions: {},
-      publicPath: '/',
+      // publicPath: '/',
     },
     open: {
-      target: [proxy],
+      // target: [proxy],
     },
     // compress: true,
     hot: true,
@@ -66,7 +69,8 @@ module.exports = merge(common, {
     headers: {
       'Access-Control-Allow-Origin': '*',
     },
-    port: 8080,
+    // port: 8080,
+    port: 3000,
     https: false,
   },
 });

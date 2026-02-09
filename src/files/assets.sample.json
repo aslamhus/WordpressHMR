@@ -1,11 +1,13 @@
 {
   "config": {
-    "handlePrefix": "my-asset",
-    "host": "local.mysite",
-    "site": "http://local.mysite:8888",
-    "port": "8888",
+    "handlePrefix": "my-asset-handle",
+    "host": "localhost",
+    "site": "http://localhost:8080",
+    "port": "8080",
     "protocol": "http",
-    "theme": "my-theme"
+    "theme": "theme-name",
+    "src": "resources",
+    "themePath": "wp-content/themes/"
   },
   "assets": {
     "enqueue_block_editor_assets": [

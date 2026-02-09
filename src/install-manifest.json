@@ -1,5 +1,5 @@
 [
-  ["assets.sample.json", "resources/assets/"],
+  ["assets.sample.json", ""],
   ["editor.scss", "resources/assets/css/"],
   ["editor.js", "resources/js/"],
   ["screen.scss", "resources/assets/css/"],
@@ -8,5 +8,6 @@
   ["webpack.common.js", ""],
   ["webpack.dev.js", ""],
   ["webpack.prod.js", ""],
-  ["functions.php", "resources/"]
+  ["functions.php", "resources/"],
+  ["compose.yml", ""]
 ]

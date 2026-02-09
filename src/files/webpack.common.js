@@ -12,18 +12,18 @@ const RemoveEmptyScriptsPlugin = require('webpack-remove-empty-scripts');
  * Please note that paths for assets must exclude the extension
  * i.e. 'js/editor' instead of 'js/editor.js'
  */
-const assetsJson = require('./resources/assets/assets.json');
+const assetsJson = require('./assets.json');
 const assets = console.log('assetsJson', assetsJson.assets);
 // get the theme path from the assets.json
-const { theme } = assetsJson.config;
-// get the resources path (where your theme and assets are located)
-const resourcesPath = './resources';
+const { theme, themePath, src } = assetsJson.config;
+// get the src path (where your theme and assets are located)
+const resourcesPath = src ?? 'resources';
 // create the entry points from the assets.json
 const entry = Object.entries(assetsJson.assets).reduce((acc, entry) => {
   const [hook, assetsForHooks] = entry;
   assetsForHooks.forEach((script) => {
     const entryName = script.path;
-    const entryPath = `${resourcesPath}${script.path}`;
+    const entryPath = `./${resourcesPath}${script.path}`;
     if (!entryName || !entryPath) return acc;
     acc[entryName] = entryPath;
   });
@@ -39,10 +39,13 @@ const entry = Object.entries(assetsJson.assets).reduce((acc, entry) => {
  *  },
  */
 
+let outputPath = themePath ? `/${themePath}/${theme}` : '/public' + '/wp-content/themes/' + theme;
+outputPath = path.resolve(path.resolve(__dirname) + outputPath);
+
 console.log('entry', entry);
 console.log('theme', theme);
-path.resolve(path.resolve(__dirname) + '/public' + '/wp-content/themes/' + theme);
-
+console.log('outputPath', outputPath);
+let publicPath = `/wp-content/themes/${theme}/`;
 module.exports = {
   // ...defaultConfig,
   ...{
@@ -52,8 +55,8 @@ module.exports = {
     },
     output: {
       clean: false,
-      path: path.resolve(path.resolve(__dirname) + '/public' + '/wp-content/themes/' + theme),
-      publicPath: `/wp-content/themes/${theme}/`,
+      path: outputPath,
+      publicPath,
     },
 
     plugins: [
@@ -68,8 +71,8 @@ module.exports = {
       new CopyWebpackPlugin({
         patterns: [
           {
-            from: path.resolve(process.cwd(), 'resources'),
-            to: path.resolve(path.resolve(__dirname) + '/public' + '/wp-content/themes/' + theme),
+            from: path.resolve(process.cwd(), resourcesPath),
+            to: outputPath,
             globOptions: {
               ignore: ['**/js/**', '**/scss/**', '**/node_modules/**'],
             },

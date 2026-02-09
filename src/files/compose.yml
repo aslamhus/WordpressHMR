@@ -1,0 +1,93 @@
+services:
+  wordpress:
+    image: wordpress:latest
+    container_name: wordpress
+    volumes:
+      #Volumes provide the ability to connect specific filesystem paths of the container back to the host machine.
+      - ./wp-content:/var/www/html/wp-content
+      # Mount the vendor folder in parent directory of wordpress in order to gain access to wp-load.php
+      # EnqueueAssets must exist within the container in order to work
+      # This will be helpful for other uses of composer should folks want to add their own packages
+      - ./vendor/:/var/www/vendor
+      # assets.json also needs to be accessible in the same folder as vendor
+      - ./assets.json:/var/www/assets.json
+      # - ./public:/var/www/html
+    build:
+      dockerfile: Docker/production.DockerFile
+      # context: ./
+
+    environment:
+      - WORDPRESS_DB_NAME=wp_vancouverjazzorchestra
+      - WORDPRESS_TABLE_PREFIX=wp_
+      - WORDPRESS_DB_HOST=db
+      - WORDPRESS_DB_USER=admin
+      - WORDPRESS_DB_PASSWORD=root
+      - WORDPRESS_DEBUG=true
+      - WORDPRESS_DEBUG_LOG=true
+
+    depends_on:
+      - db
+      - phpmyadmin
+    restart: always
+    ports:
+      - 8080:80
+    networks:
+      - wordpress
+
+  db:
+    image: mariadb:latest
+    container_name: db
+    restart: always
+    volumes:
+      - db_data:/var/lib/mysql
+      # optionally, dump your database when wordpress starts up
+      # - ./Docker/data/dump.sql:/docker-entrypoint-initdb.d/dump.sql
+
+    environment:
+      MYSQL_USER: admin
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_PASSWORD: root
+      MYSQL_DATABASE: wp_vancouverjazzorchestra
+    networks:
+      - wordpress
+
+  phpmyadmin:
+    depends_on:
+      - db
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: phpmyadmin
+    restart: always
+    ports:
+      - 8180:80
+    environment:
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: root
+
+  wpcli:
+    container_name: wpcli
+    working_dir: /var/www/html
+    restart: always
+    image: wordpress:cli
+    stdin_open: true
+    tty: true
+    environment:
+      - WORDPRESS_DB_NAME=wp_vancouverjazzorchestra
+      - WORDPRESS_TABLE_PREFIX=wp_
+      - WORDPRESS_DB_HOST=db
+      - WORDPRESS_DB_USER=admin
+      - WORDPRESS_DB_PASSWORD=root
+    depends_on:
+      - db
+      - wordpress
+    entrypoint: ['wp']
+    volumes_from:
+      - wordpress
+    networks:
+      - wordpress
+
+volumes:
+  db_data:
+
+# Networks
+networks:
+  wordpress:
