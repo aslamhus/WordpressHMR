@@ -1,11 +1,12 @@
 {
   "name": "wordpres-dev-with-hmr",
-  "version": "2.3.0",
+  "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
     "start": "webpack serve --config webpack.dev.js",
-    "build:static-enqueue-assets": "php vendor/aslamhus/wordpress-hmr/src/build.php",
+    "start-docker": "docker-compose up -d && open http://localhost:8080",
+    "build:static-enqueue-assets": "docker exec wordpress php /var/www/vendor/aslamhus/wordpress-hmr/src/build.php",
     "build": "wp-scripts build --webpack-src-dir=resources --config webpack.prod.js && npm run build:static-enqueue-assets"
   },
   "author": "Aslam Husain <aslam.percy.husain@gmail.com> (https://github.com/aslamhus)",

@@ -3,3 +3,6 @@ vendor
 Todo
 public
 resources
+node_modules
+compose.yml
+assets.sample.json

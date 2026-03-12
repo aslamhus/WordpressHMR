@@ -3,30 +3,31 @@ const CopyWebpackPlugin = require("copy-webpack-plugin");
 const defaultConfig = require("@wordpress/scripts/config/webpack.config");
 const RemoveEmptyScriptsPlugin = require("webpack-remove-empty-scripts");
 const MiniCSSExtractPlugin = require("mini-css-extract-plugin");
+const WORKING_DIR = process.env.WORKING_DIR;
 
 /**
- * create entries from assets.json
- *  assets.json works in tandem with enqueue-assets.php and webpack in order
+ * create entries from whr.json
+ *  whr.json works in tandem with enqueue-assets.php and webpack in order
  * to create a manifest of assets that can be enqueued in WordPress
  * and enable HMR in development.
  *
  * Please note that paths for assets must exclude the extension
  * i.e. 'js/editor' instead of 'js/editor.js'
  */
-const assetsJson = require("./assets.json");
-const assets = console.log("assetsJson", assetsJson.assets);
-// get the theme path from the assets.json
-const { theme, themePath, src } = assetsJson.config;
+const whrJson = require(`${WORKING_DIR}/whr.json`);
+const assets = console.log("whrJson", whrJson.assets);
+// get the theme path from the whr.json
+const { theme, themePath, src } = whrJson.config;
 // get the src path (where your theme and assets are located)
 const resourcesPath = src ?? "resources";
-// create the entry points from the assets.json
-const entry = Object.entries(assetsJson.assets).reduce((acc, entry) => {
+// create the entry points from the whr.json
+const entry = Object.entries(whrJson.assets).reduce((acc, entry) => {
   const [hook, assetsForHooks] = entry;
   assetsForHooks.forEach((script) => {
     const entryName = script.path;
-    const entryPath = `./${resourcesPath}${script.path}`;
+    const entryPath = `${resourcesPath}${script.path}`;
     if (!entryName || !entryPath) return acc;
-    acc[entryName] = entryPath;
+    acc[entryName] = `${WORKING_DIR}/${entryPath}`;
   });
   return acc;
 }, {});
@@ -41,9 +42,10 @@ const entry = Object.entries(assetsJson.assets).reduce((acc, entry) => {
  */
 
 let outputPath = themePath
-  ? `/${themePath}/${theme}`
-  : "/public" + "/wp-content/themes/" + theme;
-outputPath = path.resolve(path.resolve(__dirname) + outputPath);
+  ? `${WORKING_DIR}/${themePath}/${theme}`
+  : `${WORKING_DIR}/public/wp-content/themes/${theme}`;
+outputPath = path.resolve(outputPath);
+// outputPath = path.resolve(path.resolve(__dirname) + outputPath);
 
 console.log("entry", entry);
 console.log("theme", theme);
@@ -77,7 +79,7 @@ module.exports = {
       new CopyWebpackPlugin({
         patterns: [
           {
-            from: path.resolve(process.cwd(), resourcesPath),
+            from: path.resolve(WORKING_DIR, resourcesPath),
             to: outputPath,
             globOptions: {
               ignore: ["**/js/**", "**/scss/**", "**/node_modules/**"],

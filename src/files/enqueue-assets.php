@@ -12,9 +12,9 @@ use Aslamhus\WordpressHMR\EnqueueAssets;
 
 // get assets json
 // load assets json file and return it as an associative array
-$path =  ABSPATH . '/../assets.json';
+$path =  ABSPATH . '/../whr.json';
 if (!file_exists($path)) {
-    throw new \Exception("assets.json does not exist at " . $path);
+    throw new \Exception("whr.json does not exist at " . $path);
 }
 $jsonString = file_get_contents($path);
 $assetsJson =  json_decode($jsonString, true);

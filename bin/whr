@@ -1,0 +1,116 @@
+#!/bin/bash
+# shellcheck disable=SC1091
+# get script path from vendor dir @see https://getcomposer.org/doc/articles/vendor-binaries.md
+if [[ -z "$COMPOSER_RUNTIME_BIN_DIR" ]]; then
+	BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+else
+	BIN_DIR="$COMPOSER_RUNTIME_BIN_DIR"
+fi
+PACKAGE_DIR="${BIN_DIR}/../aslamhus/wordpress-hmr"
+export PACKAGE_DIR
+source "${PACKAGE_DIR}/bin/utils.sh"
+source "${PACKAGE_DIR}/bin/docker.sh"
+WORKING_DIR_NAME=$(getWorkingDirectoryName)
+WORKING_DIR=$PWD
+export WORKING_DIR
+
+main() {
+	if ! checkForDocker; then exit 1; fi
+	# docker ls | grep wordpresshmr-wordpress
+	case "$1" in
+
+	"install")
+		install
+		;;
+
+	"start")
+		start
+		;;
+
+	"start-docker")
+		startDocker
+		;;
+
+	"build")
+		build
+		;;
+
+	"wp")
+		wp "$@"
+		;;
+
+	"exec")
+		exec "$@"
+		;;
+
+	esac
+}
+
+install() {
+	# cd into your project root
+	# move the installer
+	cp "${PACKAGE_DIR}/installer.php" ./installer.php
+	# run the installer
+	# "${PACKAGE_DIR}/bin/install.sh"
+	php installer.php
+	# # cleanup
+	rm installer.php
+}
+
+start() {
+	echo "starting WHR container..."
+	startDocker || exit 1
+	# get the port and start webpack
+	startWebpack
+}
+
+startDocker() {
+	# port="8080"
+	# get port from whr.json
+	export WHR_PORT=""
+	WHR_PORT="$(getPort)"
+	# start docker container
+	# to rebuild add --build to docker-compose
+	if ! docker-compose up -d; then
+		exit 1
+	fi
+	echo "✔️ Starting container: $(getDockerContainerName "wordpress")"
+	echo "✔️ Container started at localhost:${WHR_PORT}"
+	open "http://localhost:${WHR_PORT}"
+}
+
+startWebpack() {
+	(
+		cd "${PACKAGE_DIR}" || exit
+		export WORKING_DIR="$WORKING_DIR"
+		npx webpack serve --config ./build/webpack.dev.js
+	)
+}
+
+# TODO - script for building with wp-scripts and then building the enqueue assets in the container / local environment
+# how do we find the correct path to the wordpress directory inside the docker container. Should we hard code it? We know that
+build() {
+	exec wordpress bash -c '
+		cd ../vendor/aslamhus/wordpress-hmr
+		php build.php
+	'
+
+	#  "build:static-enqueue-assets": "docker exec wordpress php /var/www/vendor/aslamhus/wordpress-hmr/src/build.php",
+	# "build": "wp-scripts build --webpack-src-dir=resources --config webpack.prod.js && npm run build:static-enqueue-assets"
+}
+
+# run wp-cli in docker container
+wp() {
+	shift
+	container=$(getDockerContainerName wpcli)
+	docker exec "${container}" wp "$@"
+}
+
+# execute commands in the wordpress container
+exec() {
+	shift
+	container=$(getDockerContainerName wordpress)
+	docker exec "${container}" "$@"
+}
+
+main "$@"

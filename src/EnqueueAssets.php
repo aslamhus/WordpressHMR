@@ -12,7 +12,7 @@ namespace Aslamhus\WordpressHMR;
  */
 class EnqueueAssets
 {
-    private array $assetsJson;
+    private array $whrJson;
     private array $config;
     private string $handlePrefix;
     private \stdClass $isEnqueued;
@@ -21,51 +21,51 @@ class EnqueueAssets
     public const DEFAULT_WORDPRESS_PATH = __DIR__ . '/../../../../';
 
 
-    public function __construct(array $assetsJson, string $wordpressPath = self::DEFAULT_WORDPRESS_PATH)
+    public function __construct(array $whrJson, string $wordpressPath = self::DEFAULT_WORDPRESS_PATH)
     {
         // load wordpress functions
-        
+
         if (!file_exists($wordpressPath . '/wp-load.php')) {
-            
-            throw new \Exception("Failed to enqueue asssets. wp-load.php not found at " . $wordpressPath . ". Check the wordpress path in build.php or inc/enqueue-assets.php." );
+
+            throw new \Exception("Failed to enqueue asssets. wp-load.php not found at " . $wordpressPath . ". Check the wordpress path in build.php or inc/enqueue-assets.php.");
         }
         // prevent wp-load from producing warning: "Undefined index: HTTP_HOST"
         if (PHP_SAPI === 'cli') {
 
             $_SERVER['HTTP_HOST'] ??= '';
-
         }
         // Note: There is an error where wp-load.php is being required twice
         // and giving warnings:
         // i.e. Warning: Constant DB_NAME already defined
         // the public build path defines where the assets are built
         // the public directory is where your wordpress installation is
-        require_once $wordpressPath . '/wp-load.php';
+        if (!function_exists('wp_get_theme')) {
+            require_once $wordpressPath . '/wp-load.php';
+        }
         // init the isEnqueued object
         $this->isEnqueued = new \stdClass();
         // get the assets json
-        $this->assetsJson = $assetsJson;
+        $this->whrJson = $whrJson;
         // get the config
-        $this->config = $assetsJson['config'] ?? [];
+        $this->config = $whrJson['config'] ?? [];
 
         if (empty($this->config)) {
-            throw new \Exception("'config' is not defined in assets.json.");
+            throw new \Exception("'config' is not defined in whr.json.");
         }
         // check the the config theme is the same as the stylesheet directory basename
         $configTheme = $this->config['theme'] ?? '';
         // get the theme name from the stylseheet (returns the theme directory name)
         // @see: https://developer.wordpress.org/reference/classes/wp_theme/
-            $wpTheme = wp_get_theme()->get_stylesheet();
-            if ($configTheme !== $wpTheme) {
-                throw new \Exception("The theme name in the config file ('$configTheme') does not match the theme name in the stylesheet directory ('$wpTheme'). Please make sure that the active theme and the theme set in your assets.json files match.");
-            }
+        $wpTheme = wp_get_theme()->get_stylesheet();
+        if ($configTheme !== $wpTheme) {
+            error_log("The theme name in the whr.json file ('$configTheme') does not match the active theme name in the stylesheet directory ('$wpTheme'). Please make sure that the active theme and the theme set in your whr.json files match. Please activate the theme '$configTheme'");
+        }
 
         // get the handle prefix
         $this->handlePrefix = $this->config['handlePrefix'] ?? "custom-asset";
         // get the hooks by traversing assets json and merging all hooks
         // @see https://developer.wordpress.org/apis/hooks/action-reference/
-        $this->queue = $this->buildQueue($this->assetsJson['assets']);
-
+        $this->queue = $this->buildQueue($this->whrJson['assets']);
     }
 
     /**
@@ -75,7 +75,7 @@ class EnqueueAssets
      * and enable hot module replacement (HMR)
      *
      * Enqueue iterates through the queue assets (compiled by buildQueue method)
-     * and enqueues them based on the hook and condition provided in the assets.json file
+     * and enqueues them based on the hook and condition provided in the whr.json file
      *
      * @return void
      */
@@ -85,6 +85,7 @@ class EnqueueAssets
         $this->isEnqueued = new \stdClass();
         // for each hook (i.e. 'admin_enqueue_scripts'), add an action that enqueues each relevant asset
         foreach ($this->queue as $hook => $queueItems) {
+
             add_action($hook, function () use ($queueItems, $hook) {
                 // note: sometimes if a url hits a 404 you'll get hooks called for each null asset
                 // this will call certain actions multiple times but with null args.
@@ -102,8 +103,8 @@ class EnqueueAssets
                     // 3. dependencies
                     // 4. version
 
-                    list($handle, $src, $deps, $ver,$args) = $enqueueArgs;
-         
+                    list($handle, $src, $deps, $ver, $args) = $enqueueArgs;
+
                     $enqueueArgs[1] = get_stylesheet_directory_uri() . $enqueueArgs[1];
                     // check if the condition is met
                     if (!$this->evalCondition($condition)) {
@@ -118,19 +119,18 @@ class EnqueueAssets
                     // enqueue the asset
                     call_user_func($func_name, $handle, get_stylesheet_directory_uri() . $src, $deps, $ver, $args);
                     // enqueue accompanying stylesheet, if it exists
-                    self::enqueueAccompanyingStylesheet_dev($handle,$src,$deps,$ver);
-                
+
+                    self::enqueueAccompanyingStylesheet_dev($handle, $src, $deps, $ver);
                 }
             }, $priority, 0);
         }
-
     }
 
     /**
      * Build the assets file
      *
      * Creates a file that enqueues all the assets without
-     * traversing the assets.json file each page load, avoiding dynamic asset loading
+     * traversing the whr.json file each page load, avoiding dynamic asset loading
      * and improving performance. This method is called in the build process.
      *
      *
@@ -154,9 +154,9 @@ class EnqueueAssets
                 $func_name = $queueItem[0];
                 $enqueueArgs = $queueItem[1];
 
-                    list($handle, $src, $deps, $ver,$args) = $enqueueArgs;
+                list($handle, $src, $deps, $ver, $args) = $enqueueArgs;
                 $condition = $queueItem[2] ?? null;
-                $enqueueArgs[1] = "\$themepath". $enqueueArgs[1];
+                $enqueueArgs[1] = "\$themepath" . $enqueueArgs[1];
                 $argsArrayString = json_encode($enqueueArgs, JSON_UNESCAPED_SLASHES);
                 // args array string is the json encoded array of enqueue arguments
                 // 1. handle
@@ -172,7 +172,7 @@ class EnqueueAssets
                     $content .= "if($statement($argument) == $value) {\n";
                     // enqueue the asset
                     $content .= "$func_name(...$argsArrayString);\n";
-                    
+
                     // enqueue accompanying stylesheet, if it exists
                     $content .= self::enqueueAccompanyingStylesheet_build($handle, $src, $deps, $ver);
                     $content .= "}\n";
@@ -186,21 +186,24 @@ class EnqueueAssets
         file_put_contents($enqueueAssetsFile, $content);
     }
 
-    private static function enqueueAccompanyingStylesheet_build($handle, $src, $deps, $ver) : string{
+    private static function enqueueAccompanyingStylesheet_build($handle, $src, $deps, $ver): string
+    {
         // enqueue accompanying stylesheet, if it exists
-       $cssSrc = str_replace('.js', '.css', $src);
-        if(file_exists(get_stylesheet_directory() . $cssSrc)){
-            return "wp_enqueue_style('".$handle . "-style', get_stylesheet_directory_uri() . '".$cssSrc."', ".json_encode($deps).", '$ver');\n";
-        } 
+        $cssSrc = str_replace('.js', '.css', $src);
+        if (file_exists(get_stylesheet_directory() . $cssSrc)) {
+            return "wp_enqueue_style('" . $handle . "-style', get_stylesheet_directory_uri() . '" . $cssSrc . "', " . json_encode($deps) . ", '$ver');\n";
+        }
         return '';
     }
 
-    private static function enqueueAccompanyingStylesheet_dev($handle, $src, $deps, $ver) : void{
+    private static function enqueueAccompanyingStylesheet_dev($handle, $src, $deps, $ver): void
+    {
         // enqueue accompanying stylesheet, if it exists
-      $cssSrc = str_replace('.js', '.css', $src);
-        if(file_exists(get_stylesheet_directory() . $cssSrc)){
+
+        $cssSrc = str_replace('.js', '.css', $src);
+        if (file_exists(get_stylesheet_directory() . $cssSrc)) {
             wp_enqueue_style($handle . '-style', get_stylesheet_directory_uri() . $cssSrc, $deps, $ver);
-        } 
+        }
     }
 
     /**
@@ -266,12 +269,12 @@ class EnqueueAssets
         $assetRelativePath = $assetData['path'];
         // get src path of the asset
         // $srcPath = $this->getSrcPath($assetRelativePath, $ext);
-        $src = $assetRelativePath . "." .$ext;
+        $src = $assetRelativePath . "." . $ext;
         // get deps
         $deps = $assetData['dependencies'] ?? [];
         // prepare enqueue arguments
         // for more on enqueue arguments, @see https://developer.wordpress.org/reference/functions/wp_enqueue_script/
-        $enqueueArgs = [ $handle, $src, $deps];
+        $enqueueArgs = [$handle, $src, $deps];
         // get the absolute path for the asset
         $asset = get_stylesheet_directory() . $assetRelativePath . ".asset.php";
         if (!file_exists($asset)) {
@@ -292,7 +295,7 @@ class EnqueueAssets
         // 4. finally, we enqueue the asset
         $func_name = "wp_enqueue_script";
         // call_user_func_array($func_name, $enqueueArgs);
-        return [  $func_name, $enqueueArgs, $condition];
+        return [$func_name, $enqueueArgs, $condition];
     }
 
 
@@ -308,11 +311,11 @@ class EnqueueAssets
      */
     private function getSrcPath(string $assetRelativePath, string $ext): string
     {
-        return  $assetRelativePath . "." .$ext;
+        return  $assetRelativePath . "." . $ext;
     }
 
     /**
-     * Evaluate the condition provided in the assets.json file
+     * Evaluate the condition provided in the whr.json file
      *
      * The condition is an array with the following structure:
      * [condition, argument, value] where:
@@ -451,5 +454,4 @@ class EnqueueAssets
         }
         return $value;
     }
-
 }

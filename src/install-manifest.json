@@ -1,13 +1,10 @@
 [
-  ["assets.sample.json", ""],
+  ["whr.json", ""],
   ["editor.scss", "resources/assets/css/"],
   ["editor.js", "resources/js/"],
   ["screen.scss", "resources/assets/css/"],
   ["screen.js", "resources/js/"],
   ["enqueue-assets.php", "resources/inc/"],
-  ["webpack.common.js", ""],
-  ["webpack.dev.js", ""],
-  ["webpack.prod.js", ""],
   ["functions.php", "resources/"],
   ["compose.yml", ""]
 ]

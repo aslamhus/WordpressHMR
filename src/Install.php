@@ -23,15 +23,69 @@ class Install
 {
 
 
- public static function postPackageInstall(string $root = "")
+    public static function postPackageInstall(string $root = "")
     {
 
-    self::installManifestFiles($root);
-         // install package.json or add scripts/dependencies to existing package.json
-        self::installPackageJson($root);
-        exec("npm install && run build");
-        self::log('Installation complete! Please update your assets.sample.json file with the correct values and rename it to assets.json');
+        self::installManifestFiles($root);
+        // // create wp-content directory which serves as volume for docker container
+        self::createWPContentDirectory($root);
+        // // // install package.json or add scripts/dependencies to existing package.json
+        // self::installPackageJson($root);
+        // exec("npm install && run build");
+        // use default active theme
+        self::useDefaultTheme($root);
+
+        // make whr executable
+        exec("chmod +x vendor/bin/whr || echo 'Failed to find whr in vendor/bin directory");
+
+
+
+        // self::log('Installation complete! Please update your assets.sample.json file with the correct values and rename it to whr.json');
     }
+
+    private static function useDefaultTheme($root)
+    {
+        $themes = self::getThemes($root);
+        $filePath = $root . 'whr.json';
+        $json = self::getWhrJson($filePath);
+        $json['config']['theme'] = $themes[0];
+        self::saveWhrJson($filePath, $json);
+        self::log("Using default theme '" . $themes[0] . "'. You can change your theme in the whr.json file, but make sure to update your active theme in the wordpress admin.");
+    }
+
+
+
+    private static function createWPContentDirectory($root)
+    {
+        $dirName = 'public';
+        // create directory if it does not exist
+        if (!file_exists($root . $dirName)) {
+            mkdir($root . $dirName, 0775, true);
+            // download latest wordpress
+            $wp = file_get_contents('https://wordpress.org/latest.zip');
+            file_put_contents('/tmp/latest.zip', $wp);
+            // unzip wordpress (unzips to root within wordpress dir)
+            $zip = new \ZipArchive();
+            $res = $zip->open('/tmp/latest.zip');
+            if ($res === true) {
+                $zip->extractTo('/tmp');
+                $zip->close();
+                // // move wordpress wp-content to target dir
+                $src = '/tmp/wordpress/wp-content';
+                $dest = $root . $dirName;
+                exec("mv $src $dest");
+
+                // delete the wordpress directory
+                exec("rm -r /tmp/wordpress && rm /tmp/latest.zip");
+                self::log('Wordpress unzipped successfully');
+            } else {
+                self::log('Wordpress unzipped failed');
+            }
+        } else {
+            self::log('Public directory already exists');
+        }
+    }
+
     // public static function postPackageInstall(string $root = "")
     // {
 
@@ -57,14 +111,14 @@ class Install
     //     self::installManifestFiles($root);
     //     // add style.css to resources directory
     //     self::addStylesheetToResources($root, $childTheme, $chosenTheme);
-    //     // update assets.json with the child theme name
-    //     self::updateAssetsJson($root, $childTheme);
+    //     // update whr.json with the child theme name
+    //     self::updateWhrJson($root, $childTheme);
     //      // get all releveant files from chosen theme and add them to resources directory
     //     self::addParentThemeFiles($root, $chosenTheme);
     //     // now copy the resources directory contents to the child theme
     //     self::copyResourcesToChildTheme($root, $childTheme);
-       
-   
+
+
     //     // set active theme
     //     switch_theme( $childTheme);
     //     // build asset files
@@ -73,7 +127,7 @@ class Install
     //     exec("npm install && run build");
     //     // update_option('current_theme', $childTheme);
     //     // end
-    //     self::log('Installation complete! Please update your assets.sample.json file with the correct values and rename it to assets.json');
+    //     self::log('Installation complete! Please update your assets.sample.json file with the correct values and rename it to whr.json');
     // }
 
     private static function log($message)
@@ -92,6 +146,8 @@ class Install
         self::log(''); // add a new line
         return trim(fgets(STDIN));
     }
+
+
 
 
     private static function createPublicDirectory($root)
@@ -125,9 +181,7 @@ class Install
             }
         } else {
             self::log('Public directory already exists');
-
         }
-
     }
 
     private static function loadWPFunctions($root)
@@ -147,7 +201,7 @@ class Install
         self::log('Themes found in public/wp-content/themes');
         self::log('-----------------------------');
         foreach ($themes as $index => $theme) {
-            self::log($index + 1 . '. '.$theme);
+            self::log($index + 1 . '. ' . $theme);
         }
         self::log('-----------------------------');
         return $themes;
@@ -175,24 +229,23 @@ class Install
 
         // ask user to choose a theme
         $chosenThemeIndex = self::read('Enter parent theme number (you can change this later): ');
-         if(!filter_var($chosenThemeIndex, FILTER_VALIDATE_INT)){
-             self::log("Please enter a number (found:$chosenThemeIndex)");
+        if (!filter_var($chosenThemeIndex, FILTER_VALIDATE_INT)) {
+            self::log("Please enter a number (found:$chosenThemeIndex)");
             return self::chooseParentTheme($root, $themes);
         }
         $chosenTheme = $themes[$chosenThemeIndex - 1];
-        if (empty($chosenTheme) ) {
+        if (empty($chosenTheme)) {
             self::log('Theme does not exist');
             return self::chooseParentTheme($root, $themes);
         }
-        
-       
+
+
         // check if the theme exists
         if (!file_exists($root . 'public/wp-content/themes/' . $chosenTheme)) {
             self::log('Theme does not exist');
             return self::chooseParentTheme($root, $themes);
         }
         return $chosenTheme;
-
     }
 
     private static function createChildTheme($root, $parentTheme)
@@ -212,15 +265,15 @@ class Install
 
 
         return $childThemeName;
-
     }
 
-    private static function addParentThemeFiles($root, $chosenTheme){
+    private static function addParentThemeFiles($root, $chosenTheme)
+    {
         $files = ['theme.json', 'screenshot.png'];
         $themeRoot = $root . 'public/wp-content/themes/' . $chosenTheme;
         $resourcesRoot = $root . 'resources';
-        foreach($files as $file){
-           
+        foreach ($files as $file) {
+
             copy($themeRoot . '/' . $file, $resourcesRoot . '/' . $file);
             // $root . 'resources/style.css
         }
@@ -232,7 +285,7 @@ class Install
         // if (!file_exists($root . 'resources')) {
         //     mkdir($root . 'resources', 0775, true);
         // copy latest wordpress theme directory (twentytwentyfour) from public directory
-        self::recursiveCopyDirectory($root . 'resources', $root . 'public/wp-content/themes/'.$childTheme . '/');
+        self::recursiveCopyDirectory($root . 'resources', $root . 'public/wp-content/themes/' . $childTheme . '/');
         // } else {
         //     self::log('Resources directory already exists');
         // }
@@ -243,19 +296,19 @@ class Install
     {
         // add style.css to resources directory
         // if (!file_exists($root . 'resources/style.css')) {
-            $style = '/*' . PHP_EOL;
-            $style .= 'Theme Name: ' . $childTheme . PHP_EOL;
-            $style .= 'Template: ' . $chosenTheme . PHP_EOL;
-            $style .= 'Theme URI: ' . PHP_EOL;
-            $style .= 'Description: ' . PHP_EOL;
-            $style .= 'Author: ' . PHP_EOL;
-            $style .= 'Author URI: ' . PHP_EOL;
-            $style .= 'Version: 1.0.0' . PHP_EOL;
-            $style .= 'License: GNU General Public License v2 or later' . PHP_EOL;
-            $style .= 'License URI: http://www.gnu.org/licenses/gpl-2.0.html' . PHP_EOL;
-            $style .= 'Text Domain: ' . $childTheme . PHP_EOL;
-            $style .= '*/' . PHP_EOL;
-            file_put_contents($root . 'resources/style.css', $style);
+        $style = '/*' . PHP_EOL;
+        $style .= 'Theme Name: ' . $childTheme . PHP_EOL;
+        $style .= 'Template: ' . $chosenTheme . PHP_EOL;
+        $style .= 'Theme URI: ' . PHP_EOL;
+        $style .= 'Description: ' . PHP_EOL;
+        $style .= 'Author: ' . PHP_EOL;
+        $style .= 'Author URI: ' . PHP_EOL;
+        $style .= 'Version: 1.0.0' . PHP_EOL;
+        $style .= 'License: GNU General Public License v2 or later' . PHP_EOL;
+        $style .= 'License URI: http://www.gnu.org/licenses/gpl-2.0.html' . PHP_EOL;
+        $style .= 'Text Domain: ' . $childTheme . PHP_EOL;
+        $style .= '*/' . PHP_EOL;
+        file_put_contents($root . 'resources/style.css', $style);
         // } else {
         //     self::log('Style.css already exists');
         // }
@@ -289,7 +342,7 @@ class Install
                 try {
                     mkdir($root . $filepath, 0775, true);
                 } catch (\Exception $e) {
-                    self::log("Error creating directory: '" . $root . $filepath ."'. Error: " . $e->getMessage());
+                    self::log("Error creating directory: '" . $root . $filepath . "'. Error: " . $e->getMessage());
                     exit;
                 }
             }
@@ -299,7 +352,6 @@ class Install
             if (!file_exists($destination)) {
                 copy($src, $destination);
             }
-
         }
     }
 
@@ -330,24 +382,42 @@ class Install
     }
 
 
-    private static function updateAssetsJson($root, $childTheme)
+    // private static function updateWhrJson($root, $childTheme)
+    // {
+    //     $sample = $root . 'resources/assets/assets.sample.json';
+    //     $assets = $root . 'resources/assets/whr.json';
+    //     self::updateWhrJsonConfig($sample, $childTheme);
+    //     self::updateWhrJsonConfig($assets, $childTheme);
+    // }
+
+    private static function saveWhrJson(string $filePath, array $json)
     {
-        $sample = $root . 'resources/assets/assets.sample.json';
-        $assets = $root . 'resources/assets/assets.json';
-        self::updateAssetsJsonConfig($sample, $childTheme);
-        self::updateAssetsJsonConfig($assets, $childTheme);
-        
+
+        if (!file_exists($filePath)) {
+            throw new \Exception("whr.json does not exist at " . $filePath);
+        }
+        file_put_contents($filePath, json_encode($json, JSON_PRETTY_PRINT));
     }
 
-    private static function updateAssetsJsonConfig($path, $childTheme){
-       
+    private static function getWhrJson(string $filePath): array
+    {
+        if (!file_exists($filePath)) {
+            throw new \Exception("whr.json does not exist at " . $filePath);
+        }
+        $jsonString = file_get_contents($filePath);
+        return json_decode($jsonString, true);
+    }
+
+    private static function updateWhrJsonConfig($path, $childTheme)
+    {
+
         if (!file_exists($path)) {
-            throw new \Exception("assets.json does not exist at " . $path);
-        } 
+            throw new \Exception("whr.json does not exist at " . $path);
+        }
         $jsonString = file_get_contents($path);
-        $assetsJson =  json_decode($jsonString, true);
-        $assetsJson['config']['theme'] = $childTheme;
-        file_put_contents($path, json_encode($assetsJson, JSON_PRETTY_PRINT));
+        $whrJson =  json_decode($jsonString, true);
+        $whrJson['config']['theme'] = $childTheme;
+        file_put_contents($path, json_encode($whrJson, JSON_PRETTY_PRINT));
     }
 
     /**

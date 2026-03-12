@@ -2,12 +2,12 @@
   "config": {
     "handlePrefix": "my-asset-handle",
     "host": "localhost",
-    "site": "http://localhost:8080",
-    "port": "8080",
+    "site": "http://localhost:8889",
+    "port": "8889",
     "protocol": "http",
-    "theme": "theme-name",
+    "theme": "twentytwentyfive",
     "src": "resources",
-    "themePath": "wp-content/themes/"
+    "themePath": "public/wp-content/themes/"
   },
   "assets": {
     "enqueue_block_editor_assets": [
@@ -20,8 +20,7 @@
     "wp_enqueue_scripts": [
       {
         "path": "/js/screen",
-        "ext": "js",
-        "condition": ["is_user_logged_in", null, false]
+        "ext": "js"
       }
     ]
   }

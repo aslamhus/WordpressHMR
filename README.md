@@ -4,7 +4,7 @@
 
 This is an experimental package which allows you to develop wordpress themes with `Webpack` and hot module replacement (HMR). It uses the `wp-scripts` package in tandem with a custom enqueuing algorithm to enqueue assets in your theme.
 
-Defining and enqueing assets is as simple as managing a single `assets.json` file. This file contains the configuration for your assets, including the path to your scripts and styles, the hooks where they should be enqueued, and any conditions for enqueuing them.
+Defining and enqueing assets is as simple as managing a single `whr.json` file. This file contains the configuration for your assets, including the path to your scripts and styles, the hooks where they should be enqueued, and any conditions for enqueuing them.
 
 ## Disclaimer
 
@@ -23,7 +23,7 @@ Because of the entry point limitation, I recommend packaging your scripts into a
 
 ### Build Process
 
-This package is acts as a conditional enqueuing tool for your theme. While HMR may not be possible for multiple entry points, the build process still works seamlessly with multiple entry points and conditional enqueueing. You can define your assets in the `assets.json` file and run `npm run build` to generate the necessary asset files. Please see the [Define your own assets for your theme](#define-your-own-assets-for-your-theme) section below for more information.
+This package is acts as a conditional enqueuing tool for your theme. While HMR may not be possible for multiple entry points, the build process still works seamlessly with multiple entry points and conditional enqueueing. You can define your assets in the `whr.json` file and run `npm run build` to generate the necessary asset files. Please see the [Define your own assets for your theme](#define-your-own-assets-for-your-theme) section below for more information.
 
 ### Why not just use `wp-scripts`?
 
@@ -62,7 +62,7 @@ This package is acts as a conditional enqueuing tool for your theme. While HMR m
 
 ### How does it work?
 
-This package uses the assets you define in the `assets.json` file to generate the necessary webpack configuration to build your assets. In development, each asset is enqueued dynamically using a path to a proxy development server. When you make changes to your assets, webpack will provide hot updates without requiring a reload (unless you change javascript). In production, the assets are statically enqueued with the correct path to your theme directory in an efficient and Wordpress compliant manner.
+This package uses the assets you define in the `whr.json` file to generate the necessary webpack configuration to build your assets. In development, each asset is enqueued dynamically using a path to a proxy development server. When you make changes to your assets, webpack will provide hot updates without requiring a reload (unless you change javascript). In production, the assets are statically enqueued with the correct path to your theme directory in an efficient and Wordpress compliant manner.
 
 #### Styles
 
@@ -70,7 +70,7 @@ Styles are not enqueued separately with the wp_enqueue_style hook, but rather as
 
 #### Conditional enqueuing
 
-In the assets.json file you can specify conditions for enqueuing scripts. For example, you can specify that a script should only be enqueued on a specific page template or in the block editor.
+In the whr.json file you can specify conditions for enqueuing scripts. For example, you can specify that a script should only be enqueued on a specific page template or in the block editor.
 Conditional enqueuing can get complicated, so let's break it down with examples.
 
 ##### Example 1: Enqueue a script only on the block editor
@@ -232,9 +232,10 @@ Once you have completed the pre-installation instructions above, you are ready t
    ```
 
    The installer will create the following folders/files:
+
    - `public` directory, with the latest version of wordpress installed. The installer will also prompt you to create a custom theme directory with the name you specify.
    - `resources` directory where all your theme files will reside. Webpack copies all the files from your resources folder to the current active theme.
-   - `assets` directory where your `assets.json` file and css / scss files will reside.
+   - `assets` directory where your `whr.json` file and css / scss files will reside.
    - `inc` directory where the `enqueue-assets.php` and `functions.php` file will reside.
    - `js` directory where your entry points will reside.
    - `style.css` file in the root of your theme directory with the template name of your custom theme.
@@ -243,7 +244,7 @@ Once you have completed the pre-installation instructions above, you are ready t
 
    The install will then instal npm dependencies and build your asset files, executing the commands `npm install && npm run build`
 
-3. Rename `assets.sample.json` file to `assets.json` and configure it with your development settings (see pre-installation instructions above for setting up your apache server and defining a local domain for your wordpress site)
+3. Rename `assets.sample.json` file to `whr.json` and configure it with your development settings (see pre-installation instructions above for setting up your apache server and defining a local domain for your wordpress site)
 
    ```json
    {
@@ -284,7 +285,7 @@ Once you have completed the pre-installation instructions above, you are ready t
 
 3. Once the install is complete, activate your custom theme in your wordpress site.
 
-That's it! Try changing the `src/js/screen.js` file and see the changes reflected in your browser. By default, the package adds two scripts to your theme, `screen.js` and `editor.js`. Each of these scripts is defined in the `assets.json` file with conditions to enqueue them in the public facing area of your wordpress site nd editor respectively. Each script imports a correspdonding css file in your theme. Add more scripts or more css / scss files as you like. Try updating the css and see the changes reflected without a reload.
+That's it! Try changing the `src/js/screen.js` file and see the changes reflected in your browser. By default, the package adds two scripts to your theme, `screen.js` and `editor.js`. Each of these scripts is defined in the `whr.json` file with conditions to enqueue them in the public facing area of your wordpress site nd editor respectively. Each script imports a correspdonding css file in your theme. Add more scripts or more css / scss files as you like. Try updating the css and see the changes reflected without a reload.
 
 ### Build for production
 
@@ -311,7 +312,7 @@ npm run build
 
 ### Define your own assets for your theme
 
-The `assets.json` file is where you define your assets. It is a simple JSON file that contains the following properties:
+The `whr.json` file is where you define your assets. It is a simple JSON file that contains the following properties:
 
 - `config` - This is where you define the configuration for your assets.
 - `assets` - This is where you define your scripts. Each property of the `assets` object is a hook where you want to enqueue your script. The value of each property is an array of script objects.
@@ -359,7 +360,7 @@ An array of script objects. Each script object contains the following properties
 
 ### Adding a new asset
 
-To add a new asset, simply add a new object to the `assets` array in the `assets.json` file. You will have to run `npm run build` to generate the necessary asset files.
+To add a new asset, simply add a new object to the `assets` array in the `whr.json` file. You will have to run `npm run build` to generate the necessary asset files.
 
 Let's add some styles to our theme which we only want to appear on our custom template, "My Custom Template".
 
@@ -368,10 +369,10 @@ Let's add some styles to our theme which we only want to appear on our custom te
 2. Create a script in your `resources/js` directory that will import the scss file. For example, `my-custom-template.js`.
 
    ```js
-   import '../css/my-custom-template.scss';
+   import "../css/my-custom-template.scss";
    ```
 
-3. Add the following to your `assets.json` file:
+3. Add the following to your `whr.json` file:
 
    ```json
    {
@@ -401,7 +402,7 @@ By default, the package uses twentytwentyfour as the active theme. To use a diff
 
 1. Change the active theme in wp-admin by going to `Appearance > Themes` and activating your custom theme.
 
-2. Change the theme name in the `assets.json` files. The theme name should match the name of your theme directory, i.e. twentywentfour or twentytwentyone (see wp-content/themes).
+2. Change the theme name in the `whr.json` files. The theme name should match the name of your theme directory, i.e. twentywentfour or twentytwentyone (see wp-content/themes).
 
    ```json
    {
@@ -435,17 +436,31 @@ When enqueuing assets for block themes, you will need to use the following hooks
 |   ├── js (entry points for your js files)
 |   ├── assets
 |   │   ├── css
-|   │   ├── assets.json (This is where your asset.json file is located)
-|   │   ├── assets.php (load the assets.json file in your theme)
+|   │   ├── whr.json (This is where your asset.json file is located)
+|   │   ├── assets.php (load the whr.json file in your theme)
 |   ├── inc (your theme includes)
 |   │   ├── enqueue-assets.php (where the enqueue magic happens!)
 ```
 
 The following files are required in your theme:
 
-- `assets/assets.json` - This is where you define your assets.
-- `assets/assets.php` - This is where you load the assets.json file.
+- `assets/whr.json` - This is where you define your assets.
+- `assets/assets.php` - This is where you load the whr.json file.
 - `inc/enqueue-assets.php` - This is where you enqueue your assets.
+
+## Command line
+
+### Execute script in wordpress container
+
+```bash
+ ./vendor/bin/whr exec bash -c "my commands"
+```
+
+### Execute wp-cli in wordpress container
+
+```bash
+ ./vendor/bin/whr wp --info
+```
 
 ## Contributing
 

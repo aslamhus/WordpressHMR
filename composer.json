@@ -19,5 +19,8 @@
   },
   "scripts": {
     "test-install": "phpunit test/TestEnqueueAssets.php"
-  }
+  },
+  "bin": [
+    "./bin/whr"
+  ]
 }

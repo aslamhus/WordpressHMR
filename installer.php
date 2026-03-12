@@ -1,6 +1,6 @@
 <?php
 
-if(!file_exists(__DIR__ . '/vendor/autoload.php')) {
+if (!file_exists(__DIR__ . '/vendor/autoload.php')) {
     echo "Vendor directory not found in the root directory. Please run the installer from the root directory of your project";
     return;
 }
