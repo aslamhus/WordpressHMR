@@ -15,8 +15,7 @@ WORKING_DIR=$PWD
 export WORKING_DIR
 
 main() {
-	if ! checkForDocker; then exit 1; fi
-	# docker ls | grep wordpresshmr-wordpress
+	checkForDocker || exit
 	case "$1" in
 
 	"install")
@@ -27,8 +26,16 @@ main() {
 		start
 		;;
 
+	"stop")
+		stop
+		;;
+
 	"start-docker")
 		startDocker
+		;;
+
+	"destroy-docker")
+		destroyDocker
 		;;
 
 	"build")
@@ -40,7 +47,14 @@ main() {
 		;;
 
 	"exec")
-		exec "$@"
+		execContainer "$@"
+		;;
+
+	"open")
+		openDockerInBrowser
+		;;
+	"create-db")
+		createDb
 		;;
 
 	esac
@@ -58,42 +72,91 @@ install() {
 }
 
 start() {
+
 	echo "starting WHR container..."
-	startDocker || exit 1
+	startDocker 'open' || exit 1
 	# get the port and start webpack
 	startWebpack
 }
 
 startDocker() {
-	# port="8080"
+	open=$1
 	# get port from whr.json
 	export WHR_PORT=""
 	WHR_PORT="$(getPort)"
+	while ! isPortAvailable "$WHR_PORT"; do
+		WHR_PORT="$(getNewPort)"
+		# update whr.json
+
+	done
+	updateWHRJsonPort "$WHR_PORT"
+	log "using WHR_PORT $WHR_PORT"
+	return
+
 	# start docker container
 	# to rebuild add --build to docker-compose
-	if ! docker-compose up -d; then
+	docker-compose up -d --wait || (
+		echo "Docker compose failed"
 		exit 1
-	fi
+	)
 	echo "✔️ Starting container: $(getDockerContainerName "wordpress")"
 	echo "✔️ Container started at localhost:${WHR_PORT}"
-	open "http://localhost:${WHR_PORT}"
+	[[ -n "$open" ]] && open "http://localhost:${WHR_PORT}"
 }
 
 startWebpack() {
 	(
 		cd "${PACKAGE_DIR}" || exit
+		# enable webpack to access WORKING_DIR global
 		export WORKING_DIR="$WORKING_DIR"
 		npx webpack serve --config ./build/webpack.dev.js
 	)
 }
 
+stop() {
+	docker-compose down
+}
+
+openDockerInBrowser() {
+	local port=""
+	echo 'open please'
+	port="$(getPort)"
+	open "http://localhost:${port}"
+}
+
+createDb() {
+	local url
+	local title
+	url="localhost:$(getPort)"
+	title="$WORKING_DIR_NAME"
+	echo "wp core install --url=$url --title=$title --admin_user='admin' --admin_password='password' --admin_email='admin@example.com'"
+
+	if ! main wp core install --url="$url" --title="$title" --admin_user='admin' --admin_email='admin@example.com' --admin_password='password'; then
+		echo "Failed to run wp core install"
+		return 1
+	fi
+
+	echo "Wordpress site installed"
+
+}
+
 # TODO - script for building with wp-scripts and then building the enqueue assets in the container / local environment
 # how do we find the correct path to the wordpress directory inside the docker container. Should we hard code it? We know that
 build() {
-	exec wordpress bash -c '
+	# 1. Build wp scripts asset files
+	# !!!Remember, this is running in your project directory, outside container
+	# but it outputs to the volume inside the container
+	# cd vendor/aslamhus/wordpress-hmr
+	return
+	cd vendor/aslamhus/wordpress-hmr || exit 1
+	npx wp-scripts build --webpack-src-dir="$WORKING_DIR/resources" --config build/webpack.prod.js
+	cd "$WORKING_DIR"
+	# 2. Build enqueue assets
+	# !!!Remember, you are running this command inside the wordpress container
+	return
+	execContainer wordpress bash -c "
 		cd ../vendor/aslamhus/wordpress-hmr
-		php build.php
-	'
+		php build.php"
 
 	#  "build:static-enqueue-assets": "docker exec wordpress php /var/www/vendor/aslamhus/wordpress-hmr/src/build.php",
 	# "build": "wp-scripts build --webpack-src-dir=resources --config webpack.prod.js && npm run build:static-enqueue-assets"
@@ -103,14 +166,27 @@ build() {
 wp() {
 	shift
 	container=$(getDockerContainerName wpcli)
+	[[ -z "$container" ]] && (
+		echo "Failed to run wp-cli. Container name not found. Please start your container"
+		exit 1
+	)
+
 	docker exec "${container}" wp "$@"
 }
 
 # execute commands in the wordpress container
-exec() {
+execContainer() {
 	shift
 	container=$(getDockerContainerName wordpress)
+	[[ -z "$container" ]] && (
+		echo "Failed to run docker exec. Container name not found. Please start your container"
+		exit 1
+	)
 	docker exec "${container}" "$@"
+}
+
+destroyDocker() {
+	docker compose down --rmi all --volumes
 }
 
 main "$@"

@@ -310,6 +310,10 @@ npm run build
    define( 'WP_ENVIRONMENT_TYPE', 'development' )
    ```
 
+### Troubleshooting webpack
+
+If you encounter an error such as `Module parse failed: 'import' and 'export' may appear only with 'sourceType: module'`, please make sure your root directory of your project does not contain a package.json file where the type is set to "commonjs". While `aslamhus/wordpress-hmr` uses ES6 syntax for its webpack configuration, `wp-scripts` uses CommonJS and specifiying a type can cause errors.
+
 ### Define your own assets for your theme
 
 The `whr.json` file is where you define your assets. It is a simple JSON file that contains the following properties:

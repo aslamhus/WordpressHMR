@@ -17,3 +17,10 @@ getWorkingDirectoryName() {
 getPort() {
 	getWHRJson | jq -r .config.port
 }
+
+updateWHRJsonPort() {
+	tmpfile=$(mktemp)
+	getWHRJson | jq ".config.port = $1" >"$tmpfile"
+	mv "$tmpfile" ./whr.json
+
+}

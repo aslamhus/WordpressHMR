@@ -23,7 +23,7 @@ services:
       WORDPRESS_TABLE_PREFIX: wp_
       WORDPRESS_DB_HOST: db
       WORDPRESS_DB_USER: admin
-      WORDPRESS_DB_PASSWORD: root
+      WORDPRESS_DB_PASSWORD: password
       WORDPRESS_DEBUG: true
       WORDPRESS_CONFIG_EXTRA: |
         /* Remove https for admin */
@@ -53,8 +53,8 @@ services:
 
     environment:
       MYSQL_USER: admin
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_PASSWORD: password
       MYSQL_DATABASE: wp_database
     networks:
       - wordpressnet
@@ -83,7 +83,7 @@ services:
       - WORDPRESS_TABLE_PREFIX=wp_
       - WORDPRESS_DB_HOST=db
       - WORDPRESS_DB_USER=admin
-      - WORDPRESS_DB_PASSWORD=root
+      - WORDPRESS_DB_PASSWORD=password
     depends_on:
       - db
       - wordpress
