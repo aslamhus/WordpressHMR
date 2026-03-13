@@ -9,6 +9,9 @@ services:
     volumes:
       #Volumes provide the ability to connect specific filesystem paths of the container back to the host machine.
       - ./public/wp-content:/var/www/html/wp-content
+      # Copy vendor directory to parent directory of public wordpress site. Allows EnqueueAssets to run in container
+      # and also useful in case you want to run other composer packages.
+      - ./vendor/:/var/www/vendor
       # whr.json also needs to be accessible in the same folder as vendor
       - ./whr.json:/var/www/whr.json
       # tmp folder (necessary for wp cli db imports) - see DOCKER_TMP_VOLUME in settings.json

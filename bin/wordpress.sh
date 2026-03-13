@@ -7,3 +7,10 @@ getThemes() {
 	done
 	echo "${themes[*]}"
 }
+
+getWordpressPort() {
+	vendor/bin/whr wp option get siteurl | (
+		IFS=: read -r -a url
+		echo "${url[2]}"
+	)
+}

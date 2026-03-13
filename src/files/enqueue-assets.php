@@ -18,5 +18,9 @@ if (!file_exists($path)) {
 }
 $jsonString = file_get_contents($path);
 $assetsJson =  json_decode($jsonString, true);
+
+if (empty($assetsJson)) {
+    throw new \Exception('Enqueue assets failed: whr.json could not be parsed or was empty.');
+}
 $enqueuer = new EnqueueAssets($assetsJson, ABSPATH);
 $enqueuer->enqueue();

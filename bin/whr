@@ -8,6 +8,8 @@ else
 fi
 PACKAGE_DIR="${BIN_DIR}/../aslamhus/wordpress-hmr"
 export PACKAGE_DIR
+
+source "${PACKAGE_DIR}/bin/wordpress.sh"
 source "${PACKAGE_DIR}/bin/utils.sh"
 source "${PACKAGE_DIR}/bin/docker.sh"
 WORKING_DIR_NAME=$(getWorkingDirectoryName)
@@ -81,26 +83,23 @@ start() {
 
 startDocker() {
 	open=$1
-	# get port from whr.json
+	# set the docker port for compose.yml
 	export WHR_PORT=""
-	WHR_PORT="$(getPort)"
-	while ! isPortAvailable "$WHR_PORT"; do
-		WHR_PORT="$(getNewPort)"
-		# update whr.json
-
-	done
-	updateWHRJsonPort "$WHR_PORT"
-	log "using WHR_PORT $WHR_PORT"
-	return
-
-	# start docker container
-	# to rebuild add --build to docker-compose
+	WHR_PORT="$(getWHRJsonPort)"
+	if ! isDockerPortAvailable "$WHR_PORT"; then
+		echo "A container is already using port $WHR_PORT. Try a different port by setting port property in whr.json "
+		exit 1
+	fi
+	# start docker container  (to rebuild add --build flag)
 	docker-compose up -d --wait || (
 		echo "Docker compose failed"
 		exit 1
 	)
+	# update the wordpress / whr.json port if necessary
+	setWHRPort "$WHR_PORT"
 	echo "✔️ Starting container: $(getDockerContainerName "wordpress")"
-	echo "✔️ Container started at localhost:${WHR_PORT}"
+	echo "✔️ Container started at http://localhost:${WHR_PORT}"
+	# optionally, open in web browser
 	[[ -n "$open" ]] && open "http://localhost:${WHR_PORT}"
 }
 

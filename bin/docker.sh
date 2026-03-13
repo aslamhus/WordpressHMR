@@ -40,3 +40,19 @@ getDockerContainerPort() {
 	# name//pattern/string
 	echo "${port//0.0.0.0:/}"
 }
+
+isDockerPortAvailable() {
+	if isContainerRunning; then
+
+		return 0
+	fi
+	if docker container ls | grep "$1" -q; then
+		return 1
+	fi
+}
+
+isContainerRunning() {
+	if ! docker container ls | grep "$WORKING_DIR_NAME" -q; then
+		return 1
+	fi
+}
