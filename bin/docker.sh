@@ -42,13 +42,10 @@ getDockerContainerPort() {
 }
 
 isDockerPortAvailable() {
-	if isContainerRunning; then
-
-		return 0
-	fi
 	if docker container ls | grep "$1" -q; then
 		return 1
 	fi
+	return 0
 }
 
 isContainerRunning() {

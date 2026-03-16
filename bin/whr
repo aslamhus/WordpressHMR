@@ -25,7 +25,7 @@ main() {
 		;;
 
 	"start")
-		start
+		start "$@"
 		;;
 
 	"stop")
@@ -73,8 +73,10 @@ install() {
 	rm installer.php
 }
 
+# Start
+# starts docker and webpack
+# TODO: add --hot flag to optionally start webpack
 start() {
-
 	echo "starting WHR container..."
 	startDocker 'open' || exit 1
 	# get the port and start webpack
@@ -83,22 +85,39 @@ start() {
 
 startDocker() {
 	open=$1
-	# set the docker port for compose.yml
 	export WHR_PORT=""
+	export PHPMYADMIN_PORT=""
 	WHR_PORT="$(getWHRJsonPort)"
+	# isContainerRunning && docker-compose down
+	# cbeck that the port specified in whr.json is available
 	if ! isDockerPortAvailable "$WHR_PORT"; then
-		echo "A container is already using port $WHR_PORT. Try a different port by setting port property in whr.json "
-		exit 1
+		if
+			! isContainerRunning ||
+				(isContainerRunning && [[ "$(getDockerContainerPort)" != "$WHR_PORT" ]])
+		then
+			echo "❌ Unable to start container, port $WHR_PORT is already in use. You can set a different port in whr.json "
+			exit 1
+		fi
+	fi
+	# find an available port for phpmyadmin
+	# PHPMYADMIN_PORT="$((WHR_PORT + 1))"
+	PHPMYADMIN_PORT="8180"
+	if ! isContainerRunning && ! isDockerPortAvailable "$PHPMYADMIN_PORT"; then
+		echo "Finding an available port for phpMyAdmin"
+		while ! isDockerPortAvailable "$PHPMYADMIN_PORT"; do
+			((PHPMYADMIN_PORT++))
+		done
 	fi
 	# start docker container  (to rebuild add --build flag)
-	docker-compose up -d --wait || (
+	if ! docker-compose up -d --wait; then
 		echo "Docker compose failed"
 		exit 1
-	)
+	fi
 	# update the wordpress / whr.json port if necessary
 	setWHRPort "$WHR_PORT"
 	echo "✔️ Starting container: $(getDockerContainerName "wordpress")"
-	echo "✔️ Container started at http://localhost:${WHR_PORT}"
+	echo "✔️ phpMyAdmin started at http://localhost:${PHPMYADMIN_PORT}"
+	echo "✔️ Wordpress started at http://localhost:${WHR_PORT}"
 	# optionally, open in web browser
 	[[ -n "$open" ]] && open "http://localhost:${WHR_PORT}"
 }
@@ -139,26 +158,28 @@ createDb() {
 
 }
 
-# TODO - script for building with wp-scripts and then building the enqueue assets in the container / local environment
-# how do we find the correct path to the wordpress directory inside the docker container. Should we hard code it? We know that
 build() {
-	# 1. Build wp scripts asset files
-	# !!!Remember, this is running in your project directory, outside container
-	# but it outputs to the volume inside the container
-	# cd vendor/aslamhus/wordpress-hmr
-	return
+	# 1. Build wp scripts asset files in public diretory
+	buildWebpack
+	# 2. Build enqueue assets
+	buildEnqueueAssets
+}
+
+# Build webpack
+# !!!Remember, this is running in your project directory, outside container
+# but it outputs to the volume inside the container
+buildWebpack() {
 	cd vendor/aslamhus/wordpress-hmr || exit 1
 	npx wp-scripts build --webpack-src-dir="$WORKING_DIR/resources" --config build/webpack.prod.js
 	cd "$WORKING_DIR"
-	# 2. Build enqueue assets
-	# !!!Remember, you are running this command inside the wordpress container
-	return
+}
+
+# Build Enqueue Assets
+# !!!Remember, you are running this command inside the wordpress container
+buildEnqueueAssets() {
 	execContainer wordpress bash -c "
 		cd ../vendor/aslamhus/wordpress-hmr
 		php build.php"
-
-	#  "build:static-enqueue-assets": "docker exec wordpress php /var/www/vendor/aslamhus/wordpress-hmr/src/build.php",
-	# "build": "wp-scripts build --webpack-src-dir=resources --config webpack.prod.js && npm run build:static-enqueue-assets"
 }
 
 # run wp-cli in docker container
