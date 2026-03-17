@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/bin/bash
 
 getThemes() {
 	themes=()
@@ -6,6 +6,15 @@ getThemes() {
 		[[ "$theme" != "name" ]] && themes+=("$theme")
 	done
 	echo "${themes[*]}"
+}
+
+getActiveTheme() {
+	themes=()
+	for theme in $(vendor/bin/whr wp theme list --fields='name' --status=active); do
+		[[ "$theme" != "name" ]] && themes+=("$theme")
+	done
+	echo "${themes[0]}"
+
 }
 
 getWordpressPort() {

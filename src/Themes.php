@@ -32,6 +32,13 @@ class Themes
         return $output[0];
     }
 
+    public static function setActiveTheme(string $themeSlug)
+    {
+        if (!CLI::exec("wp theme activate $themeSlug")) {
+            throw new \Exception('Failed to active theme ' . $themeSlug);
+        }
+    }
+
 
     public static function search(string $theme): mixed
     {
@@ -57,7 +64,8 @@ class Themes
 
     public static function scaffoldChildTheme(string $childSlug, string $parentSlug)
     {
-        CLI::log("Creating child theme of $parentSlug with slug $childSlug");
+
+        CLI::log("Scaffolding child theme of $parentSlug with slug $childSlug");
         return CLI::exec("wp scaffold child-theme $childSlug --parent_theme='$parentSlug' --activate");
     }
 }

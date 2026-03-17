@@ -24,6 +24,7 @@ module.exports = merge(common, {
   mode: "development",
   devtool: "source-map", // source-map for no eval
   output: {
+    clean: false,
     hotUpdateChunkFilename: "hmr/[id].[fullhash].hot-update.js",
     hotUpdateMainFilename: "hmr/[runtime].[fullhash].hot-update.json",
   },

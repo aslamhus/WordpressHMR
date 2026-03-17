@@ -7,17 +7,11 @@ class ChildThemeCreator
 
 
 
-    public static function create($root)
+    public static function create()
     {
         // choose a parent theme and create child theme
         $chosenTheme =  self::chooseParentTheme();
-        $childThemeSlug = self::createChildTheme($chosenTheme);
-        // update whr.json theme name
-        self::updateWhrJson($root, $childThemeSlug);
-        // copy all the child theme files to resources
-        // self::copyChildThemeFilesToResources($root, $childThemeSlug);
-        // build the project with wp-scripts
-        self::activate($childThemeSlug);
+        return self::createChildTheme($chosenTheme);
     }
 
 
@@ -117,33 +111,5 @@ class ChildThemeCreator
             CLI::log("Child theme $childSlug created", CLI::$colors['Green']);
         }
         return $childSlug;
-    }
-
-    // private static function copyChildThemeFilesToResources($root, $themeSlug)
-    // {
-    //     $files = ['theme.json', 'screenshot.png'];
-    //     $src = $root . 'public/wp-content/themes/' . $themeSlug;
-    //     $target = $root . 'resources';
-    //     exec("cp -r $src/. $target/",);
-    // }
-
-
-    private static function updateWhrJson($root, $childThemeSlug)
-    {
-
-        $path = $root . 'whr.json';
-        $json = WHRJson::get($path);
-        $json['config']['theme'] = $childThemeSlug;
-        WHRJson::save($path, $json);
-    }
-
-    private static function activate($childThemeSlug)
-    {
-
-        // make sure child theme is activated
-        $output = [];
-        CLI::log('activating child theme: ' . $childThemeSlug, CLI::$colors['Green']);
-        CLI::exec("wp theme activate $childThemeSlug");
-        print_r($output);
     }
 }

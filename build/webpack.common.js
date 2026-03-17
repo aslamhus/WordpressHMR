@@ -15,9 +15,11 @@ const WORKING_DIR = process.env.WORKING_DIR;
  * i.e. 'js/editor' instead of 'js/editor.js'
  */
 const whrJson = require(`${WORKING_DIR}/whr.json`);
-const assets = console.log("whrJson", whrJson.assets);
 // get the theme path from the whr.json
 const { theme, themePath, src } = whrJson.config;
+if (!theme) {
+  throw new Error("Theme is empty, please check your whr.json");
+}
 // get the src path (where your theme and assets are located)
 const resourcesPath = src ?? "resources";
 // create the entry points from the whr.json
@@ -45,14 +47,19 @@ let outputPath = themePath
   ? `${WORKING_DIR}/${themePath}/${theme}`
   : `${WORKING_DIR}/public/wp-content/themes/${theme}`;
 outputPath = path.resolve(outputPath);
-// outputPath = path.resolve(path.resolve(__dirname) + outputPath);
-
 console.log("entry", entry);
-console.log("theme", theme);
-console.log("outputPath", outputPath);
+console.log("Theme:", theme);
+console.log("Output path:", outputPath);
+const index = defaultConfig.plugins.findIndex(
+  (o) => o.constructor.name === "CleanWebpackPlugin",
+);
+// potential to add CleanWebpackPlugin back with custom config
+let [CleanWebpackPlugin] = defaultConfig.plugins.splice(index, 1);
+
 let publicPath = `/wp-content/themes/${theme}/`;
 module.exports = {
   // ...defaultConfig,
+  stats: "errors-only",
   ...{
     entry: {
       // ...defaultConfig.entry,
@@ -65,7 +72,7 @@ module.exports = {
     },
 
     plugins: [
-      // Include WP's plugin config.
+      // Include WP's plugin config (Note: we are excluding CleanWebpackPlugin!)
       ...defaultConfig.plugins,
       new MiniCSSExtractPlugin({
         // filename: 'assets/css/[name].css',

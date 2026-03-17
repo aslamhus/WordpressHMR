@@ -18,7 +18,7 @@ getWHRJsonPort() {
 	getWHRJson | jq -r .config.port
 }
 
-setWHRPort() {
+updateWordpressPort() {
 	local new_port
 	local current_port
 	new_port="$1"
@@ -32,15 +32,24 @@ setWHRPort() {
 	vendor/bin/whr wp option set siteurl "http://localhost:$new_port"
 	vendor/bin/whr wp option set home "http://localhost:$new_port"
 	echo "Wordpress/Docker running on $new_port"
-	# 3. update whr.json
-	updateWHRJsonPort "$1"
-	echo "whr.json updated to new port $new_port"
 
 }
 
-updateWHRJsonPort() {
+updateWHRJson() {
+	if [[ -z "$1" ]]; then
+		echo "Failed to update whr.json, content cannot be empty"
+		exit 1
+	fi
 	tmpfile=$(mktemp)
-	getWHRJson | jq ".config.port = $1" >"$tmpfile"
+	echo "$1" >"$tmpfile"
 	mv "$tmpfile" ./whr.json
+}
+updateWHRJsonPort() {
+	json=$(getWHRJson | jq --arg value "$1" '.config.port = $value')
+	updateWHRJson "$json"
+}
 
+updateWHRJsonTheme() {
+	json=$(getWHRJson | jq --arg value "$1" '.config.theme = $value')
+	updateWHRJson "$json"
 }

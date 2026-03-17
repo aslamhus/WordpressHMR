@@ -8,7 +8,6 @@ else
 fi
 PACKAGE_DIR="${BIN_DIR}/../aslamhus/wordpress-hmr"
 export PACKAGE_DIR
-
 source "${PACKAGE_DIR}/bin/wordpress.sh"
 source "${PACKAGE_DIR}/bin/utils.sh"
 source "${PACKAGE_DIR}/bin/docker.sh"
@@ -36,8 +35,12 @@ main() {
 		startDocker
 		;;
 
-	"destroy-docker")
-		destroyDocker
+	"clean")
+		clean
+		;;
+
+	"destroy")
+		destroy
 		;;
 
 	"build")
@@ -55,38 +58,88 @@ main() {
 	"open")
 		openDockerInBrowser
 		;;
-	"create-db")
-		createDb
+	"core-install")
+		coreInstall
+		;;
+	"create-child-theme")
+		createChildTheme
 		;;
 
 	esac
 }
 
 install() {
-	# cd into your project root
-	# move the installer
-	cp "${PACKAGE_DIR}/installer.php" ./installer.php
-	# run the installer
-	# "${PACKAGE_DIR}/bin/install.sh"
-	php installer.php
-	# # cleanup
-	rm installer.php
+	php "${PACKAGE_DIR}/installer.php"
+}
+
+createChildTheme() {
+	php "${PACKAGE_DIR}/installer.php" --scaffold-child
 }
 
 # Start
 # starts docker and webpack
-# TODO: add --hot flag to optionally start webpack
 start() {
-	echo "starting WHR container..."
-	startDocker 'open' || exit 1
-	# get the port and start webpack
-	startWebpack
+	h=false
+	o=false
+	r=false
+	shift
+	while [[ $# -gt 0 ]]; do
+		arg="$1"
+		case "$1" in
+		# start webpack hot module replacement
+		'--hot')
+			h=true
+			;;
+		# open in browser
+		'--open')
+			o=true
+			;;
+		# wipe database and reinstall core
+		'--reset')
+			r=true
+			;;
+		*)
+			printStartUsage
+			exit 1
+			;;
+		esac
+		shift
+	done
+	export WHR_PORT=""
+	export PHPMYADMIN_PORT=""
+	if ! "${r}"; then
+		startDocker || exit 1
+	else
+		reset
+		startDocker --build || exit 1
+	fi
+	if "${h}"; then
+		startWebpack
+	fi
+	if "${o}"; then
+		open "http://localhost:${WHR_PORT}"
+	fi
+
+}
+
+printStartUsage() {
+	cat <<EOF
+invalid option "$arg"
+whr start
+options:
+--hot:		start hot reloading
+--open:		open in browser
+--reset:	wipe database and re-install core
+EOF
 }
 
 startDocker() {
-	open=$1
+	# optionally rebuild (useful for reset)
+
 	export WHR_PORT=""
 	export PHPMYADMIN_PORT=""
+	build=""
+	[[ "$1" == '--build' ]] && build="--build"
 	WHR_PORT="$(getWHRJsonPort)"
 	# isContainerRunning && docker-compose down
 	# cbeck that the port specified in whr.json is available
@@ -109,17 +162,24 @@ startDocker() {
 		done
 	fi
 	# start docker container  (to rebuild add --build flag)
-	if ! docker-compose up -d --wait; then
+	if ! docker compose up -d --wait --quiet-pull $build; then
 		echo "Docker compose failed"
 		exit 1
 	fi
+	# check if db exists and install
+	if ! main wp core is-installed 2>/dev/null || [[ "$build" == 'build' ]]; then
+		echo "Core installing now"
+		sleep 2
+		coreInstall || exit 1
+
+	fi
 	# update the wordpress / whr.json port if necessary
-	setWHRPort "$WHR_PORT"
+	updateWordpressPort "$WHR_PORT"
+	# log to the user
 	echo "✔️ Starting container: $(getDockerContainerName "wordpress")"
 	echo "✔️ phpMyAdmin started at http://localhost:${PHPMYADMIN_PORT}"
 	echo "✔️ Wordpress started at http://localhost:${WHR_PORT}"
-	# optionally, open in web browser
-	[[ -n "$open" ]] && open "http://localhost:${WHR_PORT}"
+
 }
 
 startWebpack() {
@@ -132,54 +192,75 @@ startWebpack() {
 }
 
 stop() {
-	docker-compose down
+	docker compose down
+}
+
+# Removes everything, containers, images, volumes
+clean() {
+	docker compose down --rmi all --volumes
+}
+
+# Stops and removes containers and deletes volumes
+destroy() {
+	docker compose rm --stop -v
+}
+
+reset() {
+	docker compose down --volumes
 }
 
 openDockerInBrowser() {
 	local port=""
 	echo 'open please'
-	port="$(getPort)"
+	port="$(getWHRJsonPort)"
 	open "http://localhost:${port}"
 }
 
-createDb() {
+# Installs wp database tables and resets theme
+coreInstall() {
 	local url
 	local title
-	url="localhost:$(getPort)"
+	url="localhost:$(getWHRJsonPort)"
 	title="$WORKING_DIR_NAME"
-	echo "wp core install --url=$url --title=$title --admin_user='admin' --admin_password='password' --admin_email='admin@example.com'"
 
+	# remove any existing database
+	main wp db clean --yes 2>/dev/null
+	echo "wp core install --debug --url=$url --title=$title --admin_user='admin' --admin_password='password' --admin_email='admin@example.com'"
 	if ! main wp core install --url="$url" --title="$title" --admin_user='admin' --admin_email='admin@example.com' --admin_password='password'; then
 		echo "Failed to run wp core install"
 		return 1
 	fi
+	# core install will reset to default theme. We need to sync whr.json theme to whatever theme it's using
+	activeTheme="$(getActiveTheme)"
+	echo "Resetting active theme in whr.json -> $activeTheme"
+	updateWHRJsonTheme "$activeTheme"
 
-	echo "Wordpress site installed"
+	echo "Wordpress core installed"
 
 }
 
 build() {
 	# 1. Build wp scripts asset files in public diretory
-	buildWebpack
+	# !!!Remember, this is running in your project directory, outside container
+	buildWebpack || exit 1
 	# 2. Build enqueue assets
-	buildEnqueueAssets
+	# !!!Remember, you are running this command inside the wordpress container
+	buildEnqueueAssets || exit 1
 }
 
 # Build webpack
-# !!!Remember, this is running in your project directory, outside container
 # but it outputs to the volume inside the container
 buildWebpack() {
 	cd vendor/aslamhus/wordpress-hmr || exit 1
 	npx wp-scripts build --webpack-src-dir="$WORKING_DIR/resources" --config build/webpack.prod.js
-	cd "$WORKING_DIR"
+	cd "$WORKING_DIR" || exit 1
 }
 
 # Build Enqueue Assets
-# !!!Remember, you are running this command inside the wordpress container
 buildEnqueueAssets() {
-	execContainer wordpress bash -c "
-		cd ../vendor/aslamhus/wordpress-hmr
-		php build.php"
+	if ! execContainer wordpress bash -c "php ../vendor/aslamhus/wordpress-hmr build.php"; then
+		return 1
+	fi
 }
 
 # run wp-cli in docker container
@@ -203,10 +284,6 @@ execContainer() {
 		exit 1
 	)
 	docker exec "${container}" "$@"
-}
-
-destroyDocker() {
-	docker compose down --rmi all --volumes
 }
 
 main "$@"

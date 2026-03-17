@@ -24,6 +24,7 @@ class CLI
         'Light Blue'     =>       '1;34',
         'Light Magenta'  =>       '1;35'
     ];
+
     public static $defaultLogColor = '1;30';
 
     // # Background Colors     Code
@@ -56,17 +57,17 @@ class CLI
         echo "\033[" . $color . "m" . $message . "\033[0m" . PHP_EOL;
     }
 
-    public static function read($prompt = ""): string
+    public static function read($prompt = "", $color = ""): string
     {
 
 
-        self::log($prompt); // add a new line
+        self::log($prompt, $color); // add a new line
         return trim(fgets(STDIN));
     }
 
-    public static function confirm(string $message): bool
+    public static function confirm(string $message, string $color = ""): bool
     {
-        $input = CLI::read("$message [y/n]");
+        $input = CLI::read("$message [y/n]", $color);
         return $input == 'y';
     }
 }
