@@ -42,7 +42,8 @@ getDockerContainerPort() {
 }
 
 isDockerPortAvailable() {
-	if docker container ls | grep "$1" -q; then
+	# get all containers, except current container
+	if docker container ls | grep -v "$WORKING_DIR_NAME" | grep "$1" -q; then
 		return 1
 	fi
 	return 0

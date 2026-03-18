@@ -153,14 +153,15 @@ startDocker() {
 		fi
 	fi
 	# find an available port for phpmyadmin
-	# PHPMYADMIN_PORT="$((WHR_PORT + 1))"
 	PHPMYADMIN_PORT="8180"
-	if ! isContainerRunning && ! isDockerPortAvailable "$PHPMYADMIN_PORT"; then
-		echo "Finding an available port for phpMyAdmin"
+	echo "Using default phpMyAdmin port 8180"
+	if ! isDockerPortAvailable "$PHPMYADMIN_PORT"; then
+		echo "8180 unavailable... Finding an available port for phpMyAdmin"
 		while ! isDockerPortAvailable "$PHPMYADMIN_PORT"; do
 			((PHPMYADMIN_PORT++))
 		done
 	fi
+
 	# start docker container  (to rebuild add --build flag)
 	if ! docker compose up -d --wait --quiet-pull $build; then
 		echo "Docker compose failed"
