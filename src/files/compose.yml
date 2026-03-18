@@ -52,7 +52,7 @@ services:
     restart: always
     volumes:
       - db_data:/var/lib/mysql
-      # - ./Docker/data/dump.sql:/docker-entrypoint-initdb.d/dump.sql
+      - ./Docker/data/db:/docker-entrypoint-initdb.d
 
     environment:
       MYSQL_USER: admin
