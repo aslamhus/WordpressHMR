@@ -243,6 +243,7 @@ build() {
 	# 1. Build wp scripts asset files in public diretory
 	# !!!Remember, this is running in your project directory, outside container
 	buildWebpack || exit 1
+
 	# 2. Build enqueue assets
 	# !!!Remember, you are running this command inside the wordpress container
 	buildEnqueueAssets || exit 1
@@ -252,8 +253,12 @@ build() {
 # but it outputs to the volume inside the container
 buildWebpack() {
 	cd vendor/aslamhus/wordpress-hmr || exit 1
-	npx wp-scripts build --webpack-src-dir="$WORKING_DIR/resources" --config build/webpack.prod.js
-	cd "$WORKING_DIR" || exit 1
+	ls -1
+	if ! npx wp-scripts build --webpack-src-dir="$WORKING_DIR/resources" --config build/webpack.prod.js; then
+		echo "Failed to run wp-scripts build"
+		exit 1
+	fi
+	cd "$WORKING_DIR"
 }
 
 # Build Enqueue Assets
