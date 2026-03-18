@@ -18,6 +18,10 @@ getWHRJsonPort() {
 	getWHRJson | jq -r .config.port
 }
 
+getWHRJsonTheme() {
+	getWHRJson | jq -r .config.theme
+}
+
 updateWordpressPort() {
 	local new_port
 	local current_port
@@ -45,11 +49,28 @@ updateWHRJson() {
 	mv "$tmpfile" ./whr.json
 }
 updateWHRJsonPort() {
-	json=$(getWHRJson | jq --arg value "$1" '.config.port = $value')
+	json=$(
+		getWHRJson |
+			jq --arg value "$1" '.config.port = $value' |
+			jq --arg value "$1" '.config.site = "http://localhost:$value"'
+	)
 	updateWHRJson "$json"
 }
 
 updateWHRJsonTheme() {
 	json=$(getWHRJson | jq --arg value "$1" '.config.theme = $value')
 	updateWHRJson "$json"
+}
+
+syncTheme() {
+	echo "Syncing whr.json theme"
+	whr_theme=$(getWHRJsonTheme)
+	active_theme=$(getActiveTheme)
+	if [[ "${whr_theme}" != "${active_theme}" ]]; then
+		echo "Theme in whr.json does not match active theme. Activating ${whr_theme}"
+		if ! vendor/bin/whr wp theme activate "${whr_theme}"; then
+			echo "Failed to activate theme"
+			return 1
+		fi
+	fi
 }

@@ -141,7 +141,8 @@ startDocker() {
 	build=""
 	[[ "$1" == '--build' ]] && build="--build"
 	WHR_PORT="$(getWHRJsonPort)"
-	# isContainerRunning && docker-compose down
+	# check that whr.json theme and active theme match
+	syncTheme || exit 1
 	# cbeck that the port specified in whr.json is available
 	if ! isDockerPortAvailable "$WHR_PORT"; then
 		if
