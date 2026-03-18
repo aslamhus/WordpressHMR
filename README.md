@@ -4,9 +4,13 @@
 
 This is an experimental package inspired by `wp-env`, which allows you to develop containerized wordpress sites with `Docker`, `Webpack` and `hot module replacement (HMR)`. It uses the Wordpress `wp-scripts` package in tandem with a custom enqueuing algorithm to enqueue assets in your theme.
 
-WordpressHMR now comes with a CLI tool that allows you to spin up a containerized wordpress site with ease.
+WordpressHMR now comes with a CLI tool that allows you to spin up a containerized wordpress site with one command.
 
 Defining and enqueing assets is as simple as managing a single `whr.json` file. This file contains the configuration for your assets, including the path to your scripts and styles, the hooks where they should be enqueued, and any conditions for enqueuing them.
+
+## Who is this package for?
+
+Anyone who wants to develop Wordpress block themes with HMR for a fast paced development in a containerized environment.
 
 ## Gettings started
 
@@ -44,11 +48,9 @@ That's it! Try changing the css in your `resources/assets/screen.scss` file to s
 
 ## Hot module replacement entry points
 
-Currently, this package only supports HMR for a single entry point per page. This means that if you have multiple entry points on a single page, only the first entry point will be hot reloaded. I recommend having single entry points in your dev environment, so that you can take advatnage of the fast paced development experience of HMR, and then having a separate enqueue config for your production environment. This can easily be faciliated with separate `whr.json` files.
+Currently, this package only supports HMR for a single entry point per page. This means that if you have multiple entry points on a single page, only the first entry point will be hot reloaded. You can by all means have as many entry points as you like, but only the first one will benefit from HMR.
 
-### Build Process
-
-This package is acts as a conditional enqueuing tool for your theme. While HMR may not be possible for multiple entry points, the build process still works seamlessly with multiple entry points and conditional enqueueing. You can define your assets in the `whr.json` file and run `vendor/bin/whr build` to generate the necessary asset files. Please see the [Define your own assets for your theme](#define-your-own-assets-for-your-theme) section below for more information.
+In development, I recommend having a single entry point per page so that you can take advantage of the fast paced development experience of HMR, and then use a separate config for your production environment. This can easily be faciliated with separate `whr.json` files, according to your environment.
 
 ### Why not just use `wp-scripts`?
 
@@ -89,7 +91,24 @@ This package is acts as a conditional enqueuing tool for your theme. While HMR m
 
 ### How does it work?
 
-This package uses the assets you define in the `whr.json` file to generate the necessary webpack configuration to build your assets. In development, each asset is enqueued dynamically using a path to a proxy dev server. When you make changes to your assets, webpack will provide hot updates without requiring a reload (unless you update javascript). In production, the assets are statically enqueued with the correct path to your theme directory in an efficient and Wordpress compliant manner.
+In development, each asset is enqueued dynamically using a path to a proxy dev server. When you make changes to your assets, webpack will provide hot updates. When you build your theme, the assets are statically enqueued in your theme directory in an efficient and Wordpress compliant manner.
+
+### Start developing!
+
+```bash
+# start your container
+vendor/bin/whr start
+# start your container with HMR
+vendor/bin/whr start --hot
+```
+
+### Build for production
+
+Building is a very simple process, and leverages `wp-scripts` to generate the necessary asset files. A little magic is performed by `Aslamhus\WordpressHMR\EnqueueAssets` to create a static script which enqueues the assets in your theme, avoiding the performance overhead of enqueuing assets dynamically. Run the build command and then check out your enqueue-assets.php file in your build folder `public/wp-content/themes/your-theme/inc/enqueue-assets.php`
+
+```bash
+vendor/bin/whr build
+```
 
 #### Styles
 
@@ -146,7 +165,7 @@ Same as above, but we want to enqueue a script only on the front end. We use the
 In this example, we only want to enqueue a script on a specific page template. We use the `get_page_template_slug` function to get the page template slug and compare it to our custom template slug.
 You can find the page template slug by looking at the classname of the body tag of any page given the template.
 
-```json
+```js
 // for custom template
 {
   "assets": {
@@ -168,7 +187,7 @@ You can find the page template slug by looking at the classname of the body tag 
         "condition": ["get_page_template_slug", null, "page-template-default"]
       }
 
-// for custom post type
+// for a custom post type
 {
     "handle": "instructor-js",
     "path": "/js/instructor-single",
@@ -218,35 +237,29 @@ This will evaluate to `get_the_title(get_the_id()) === 'about'`.
 
 The installer will create the following folders/files:
 
+- `Docker` directory, which serves as an entrypoint for files in your project root and the docker container.
 - `public` directory, with the latest version of wordpress installed. The installer will also prompt you to create a custom theme directory with the name you specify.
 - `resources` directory where all your theme files will reside. Webpack copies all the files from your resources folder to the current active theme.
-- `assets` directory where your `whr.json` file and css / scss files will reside.
-- `inc` directory where the `enqueue-assets.php` and `functions.php` file will reside.
-- `js` directory where your entry points will reside.
+- `resources/assets` directory where your `whr.json` file and css / scss files will reside.
+- `resources/inc` directory where the `enqueue-assets.php` and `functions.php` file will reside.
+- `resources/js` directory where your entry points will reside.
 - `style.css` file in the root of your theme directory with the template name of your custom theme.
-
-The install will then instal npm dependencies and build your asset files, executing the commands `npm install && npm run build`
-
-### Build for production
-
-Building is a very simple process, and leverages `wp-scripts` to generate the necessary asset files. A little magic is performed by `Aslamhus\WordpressHMR\EnqueueAssets` to create a static script which enqueues the assets in your theme, avoiding the performance overhead of enqueuing assets dynamically.
-
-```bash
-vendor/bin/whr build
-```
+- `vendor` directory where your composer packages are stored. This directory is mounted in the docker container in the parent directory of your wordpress site (/var/www/).
 
 ### Accessing Docker containers
+
+#### Commands
 
 `WordpressHMR` provides some convenient commands to access your container. To run `wp-cli` commands inside your container you can use:
 
 ```bash
-vendor/bin/whr wp <commands>
+vendor/bin/whr wp --info
 ```
 
 To run commands inside your wordpress container you can use:
 
 ```bash
-vendor/bin/whr exec <command>
+vendor/bin/whr exec <commands>
 ```
 
 Note that not all common binaries exist in the wordpress container. Therefore, it's recommended to run commands in the wordpress container like so:
@@ -255,13 +268,21 @@ Note that not all common binaries exist in the wordpress container. Therefore, i
 vendor/bin/whr exec bash -c 'cd ../ && ls -1'
 ```
 
+#### Container entry points
+
+Your containers can access files in your local project through `Docker/data/tmp`. You'll find any files you add to this directory at the container path `/tmp/Docker`. If you want to change this directory, please see `volumes` in your `compose.yml` file, located in your project root.
+
+When is this useful? Say you want to import / export a database. Add your .sql dump file to Docker/data/tmp in your project. Then import it into your container's database by running `vendor/bin/whr wp db import /Docker/tmp`.
+
+Likewise, you can export your database by running `vendor/bin/whr wp db export /tmp/Docker/dump.sql`
+
 ### Troubleshooting
 
 #### Webpack Errors
 
 If you encounter an error such as `Module parse failed: 'import' and 'export' may appear only with 'sourceType: module'`, please make sure your root directory of your project does not contain a package.json file where the type is set to "commonjs". While `aslamhus/wordpress-hmr` uses ES6 syntax for its webpack configuration, `wp-scripts` uses CommonJS and specifiying a type can cause errors.
 
-### Define your own assets for your theme
+### whr.json
 
 The `whr.json` file is where you define your assets. It is a simple JSON file that contains the following properties:
 
@@ -347,22 +368,6 @@ You're done! Try changing the styles in your `my-custom-template.scss` file and 
 
 For a list of condition functions that you can use, see the [Wordpress Conditional Tags](https://developer.wordpress.org/themes/basics/conditional-tags/).
 
-## Updating the child theme
-
-By default, the package uses twentytwentyfour as the active theme. To use a different theme, you must do the following:
-
-1. Change the active theme in wp-admin by going to `Appearance > Themes` and activating your custom theme.
-
-2. Change the theme name in the `whr.json` files. The theme name should match the name of your theme directory, i.e. twentywentfour or twentytwentyone (see wp-content/themes).
-
-   ```json
-   {
-     "config": {
-       "theme": "my-theme"
-     }
-   }
-   ```
-
 ## A note on block theme hooks
 
 When enqueuing assets for block themes, you will need to use the following hooks:
@@ -372,46 +377,7 @@ When enqueuing assets for block themes, you will need to use the following hooks
 
 ## Modifying the Webpack configurations
 
-**_WARNING_**: You can set the webpack `output` option to `clean` the public folder before building, however if you have not defined the public folder correctly, you may end up deleting unintended files. Please test your configuration first before enabling `clean`.
-
-`clean` is set to false by default to ensure that you do not accidentally delete files.
-
-## Directory Structure
-
-```bash
-├── public (This is the public folder of your wordpress site)
-│   ├── wp-content
-│   │   ├── themes
-│   │   │   ├── your-theme-directory (this is where webpack will output the build files)
-│   resources (source files for your theme)
-|   ├── js (entry points for your js files)
-|   ├── assets
-|   │   ├── css
-|   │   ├── whr.json (This is where your asset.json file is located)
-|   │   ├── assets.php (load the whr.json file in your theme)
-|   ├── inc (your theme includes)
-|   │   ├── enqueue-assets.php (where the enqueue magic happens!)
-```
-
-The following files are required in your theme:
-
-- `assets/whr.json` - This is where you define your assets.
-- `assets/assets.php` - This is where you load the whr.json file.
-- `inc/enqueue-assets.php` - This is where you enqueue your assets.
-
-## Command line
-
-### Execute script in wordpress container
-
-```bash
- ./vendor/bin/whr exec bash -c "my commands"
-```
-
-### Execute wp-cli in wordpress container
-
-```bash
- ./vendor/bin/whr wp --info
-```
+You'll find tall he webpack config files in the `vendor/aslamhus/wordpress-hmr/build`.
 
 ## Contributing
 
