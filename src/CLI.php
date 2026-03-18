@@ -25,7 +25,7 @@ class CLI
         'Light Magenta'  =>       '1;35'
     ];
 
-    public static $defaultLogColor = '1;30';
+    public static $defaultLogColor = '0;37';
 
     // # Background Colors     Code
     // # ---------------------------
