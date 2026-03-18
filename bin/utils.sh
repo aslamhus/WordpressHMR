@@ -68,7 +68,7 @@ syncTheme() {
 	active_theme=$(getActiveTheme)
 	if [[ "${whr_theme}" != "${active_theme}" ]]; then
 		echo "Theme in whr.json does not match active theme. Activating ${whr_theme}"
-		if ! vendor/bin/whr wp theme activate "${whr_theme}"; then
+		if ! activateTheme "${whr_theme}"; then
 			echo "Failed to activate theme"
 			return 1
 		fi
