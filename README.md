@@ -15,7 +15,7 @@ This package requires [Docker](https://www.docker.com/get-started/), [PHP](https
 1. Install WordpressHMR package
 
 ```bash
-composer require aslamhus/wordpress-hmr
+composer require --dev aslamhus/wordpress-hmr
 ```
 
 2. Run the installer and follow the prompts.
