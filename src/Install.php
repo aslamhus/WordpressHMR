@@ -39,7 +39,10 @@ class Install
 
     public  function install()
     {
-        // if (!CLI::confirm('Would you like to create a fresh install of wordpress? This will remove any previous wordpress directory and overwrite any existing database')) return;
+
+        // install node_modules if not already installed
+        $this->installNodeModules();
+        if (!CLI::confirm('Would you like to create a fresh install of wordpress? This will remove any previous wordpress directory and overwrite any existing database')) return;
         $this->installManifestFiles();
         // create wp-content directory which serves as volume for docker container
         $this->createWPContentDirectory();
@@ -80,6 +83,8 @@ class Install
         // build to copy resources files to active theme dir
         $this->build();
     }
+
+
 
 
     private function activateTheme($themeSlug)
@@ -242,6 +247,15 @@ class Install
         }
     }
 
+    private function installNodeModules()
+    {
+        CLI::log("Installing wordpress npm dependencies");
+        exec('cd vendor/aslamhus/wordpress-hmr && npm install --loglevel "error" || exit 1', $output, $result_code);
+        if ($result_code != 0) {
+            throw new \Exception("failed to install nodem modules: " . implode("\n", $output));
+        }
+        return $result_code == 0;
+    }
 
     private static function build()
     {
