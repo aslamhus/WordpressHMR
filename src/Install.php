@@ -42,8 +42,8 @@ class Install
 
         // install node_modules if not already installed
         $this->installNodeModules();
-        if (!CLI::confirm('Would you like to create a fresh install of wordpress? This will remove any previous wordpress directory and overwrite any existing database')) return;
         $this->installManifestFiles();
+        if (!CLI::confirm('Would you like to create a fresh install of wordpress? This will remove any previous wordpress directory and overwrite any existing database', CLI::$colors['Magenta'])) return;
         // create wp-content directory which serves as volume for docker container
         $this->createWPContentDirectory();
 
@@ -162,7 +162,6 @@ class Install
     private function installManifestFiles()
     {
         $manifest = json_decode(file_get_contents(__DIR__ . '/install-manifest.json'), true);
-
         foreach ($manifest as $file) {
             list($filename, $filepath) = $file;
             CLI::log("Installing $filename to $filepath");
@@ -180,6 +179,8 @@ class Install
             // if the file does not already exist, copy it
             if (!file_exists($destination)) {
                 copy($src, $destination);
+            } else {
+                CLI::log("$filename already exists", CLI::$colors['Dark Grey']);
             }
         }
     }
