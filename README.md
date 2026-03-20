@@ -286,6 +286,14 @@ This will evaluate to `get_the_title(get_the_id()) === 'about'`.
 }
 ```
 
+## Build for production
+
+Building is a very simple process, and leverages `wp-scripts` to generate the necessary asset files. A little magic is performed by `Aslamhus\WordpressHMR\EnqueueAssets` to create a static script which enqueues the assets in your theme, avoiding the performance overhead of enqueuing assets dynamically. Run the build command and then check out your enqueue-assets.php file in your build folder `public/wp-content/themes/your-theme/inc/enqueue-assets.php`
+
+```bash
+vendor/bin/whr build
+```
+
 ### Project directory structure
 
 The installer will create the following folders/files:
@@ -293,11 +301,12 @@ The installer will create the following folders/files:
 - `Docker` directory, which serves as an entrypoint for files in your project root and the docker container.
 - `public` directory, with the latest version of wordpress installed. The installer will also prompt you to create a custom theme directory with the name you specify.
 - `resources` directory where all your theme files will reside. Webpack copies all the files from your resources folder to the current active theme.
-- `resources/assets` directory where your `whr.json` file and css / scss files will reside.
+- `resources/assets` directory where your css / scss files will reside.
 - `resources/inc` directory where the `enqueue-assets.php` and `functions.php` file will reside.
 - `resources/js` directory where your entry points will reside.
-- `style.css` file in the root of your theme directory with the template name of your custom theme.
 - `vendor` directory where your composer packages are stored. This directory is mounted in the docker container in the parent directory of your wordpress site (/var/www/).
+- `compose.yml` Docker compose settings.
+- `whr.json` where you define your assets and theme
 
 ## Accessing Docker containers
 
@@ -329,12 +338,37 @@ When is this useful? Say you want to import / export a database. Add your .sql d
 
 Likewise, you can export your database by running `vendor/bin/whr wp db export /tmp/Docker/dump.sql`
 
-## Build for production
+## Container settings
 
-Building is a very simple process, and leverages `wp-scripts` to generate the necessary asset files. A little magic is performed by `Aslamhus\WordpressHMR\EnqueueAssets` to create a static script which enqueues the assets in your theme, avoiding the performance overhead of enqueuing assets dynamically. Run the build command and then check out your enqueue-assets.php file in your build folder `public/wp-content/themes/your-theme/inc/enqueue-assets.php`
+### Wordpress
 
-```bash
-vendor/bin/whr build
+If you want to change values in the `wp-config.php` file, you can do so through your `compose.yml` file in your project root. In the services.wordpress.environment section, you'll find default values you can change. For example, if you'd like to display more error reporting with `ini_set`, you can add those values under `WORDPRESS_CONFIG_EXTRA`. Your container will evaluate that string value directly into the `wp-config.php` file.
+
+**Note: For changes to take effect, you'll need to restart your container with `vendor/bin/whr start`**
+
+```yml
+services:
+  wordpress:
+    ...
+    environment:
+      WORDPRESS_DB_NAME: wp_database
+      WORDPRESS_TABLE_PREFIX: wp_
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: admin
+      WORDPRESS_DB_PASSWORD: password
+      WORDPRESS_DEBUG: true
+      WORDPRESS_CONFIG_EXTRA: |
+        /* Remove https for admin */
+        define('FORCE_SSL_ADMIN', false );
+        define('WP_DEBUG_LOG', true);
+        define('WP_DEBUG_DISPLAY',true);
+
+        /* add error reporting */
+        ini_set('display_errors', true);
+        ini_set('display_startup_errors', true);
+        error_reporting(E_ALL);
+
+
 ```
 
 ## Troubleshooting
@@ -342,6 +376,21 @@ vendor/bin/whr build
 ### Webpack Errors
 
 If you encounter an error such as `Module parse failed: 'import' and 'export' may appear only with 'sourceType: module'`, please make sure your root directory of your project does not contain a package.json file where the type is set to "commonjs". While `aslamhus/wordpress-hmr` uses ES6 syntax for its webpack configuration, `wp-scripts` uses CommonJS and specifiying a type can cause errors.
+
+### HMR isn't working
+
+If you aren't seeing changes in your wordpress reflected in your site, try:
+
+1. You've started your container with the `--hot` option.
+
+2. Checking if the following line is in your resources/functions.php file. It should be added automatically when you install or change your theme.
+
+```php
+/** Enqueue Custom Theme Assets */
+ require_once  get_stylesheet_directory() . '/inc/enqueue-assets.php';
+```
+
+### Container
 
 ### Modifying the Webpack configurations
 
@@ -354,3 +403,7 @@ If you would like to contribute to this package, please feel free to submit a pu
 ---
 
 **This package was proudly built without AI, just one single human clacking away at the keyboard.**
+
+```
+
+```
