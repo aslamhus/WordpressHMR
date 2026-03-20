@@ -55,15 +55,17 @@ vendor/bin/whr start --hot
 
 That's it! Try changing the css in your `resources/assets/screen.scss` file to see the changes immediately reflected in your browser. By default, the package adds two scripts to your theme, `screen.js` and `editor.js`. Each of these scripts is defined in the `whr.json` file with conditions to enqueue them in the public facing area of your wordpress site nd editor respectively. Each script imports a correspdonding css file in your theme. Add more scripts or more css / scss files as you like. Try updating the css and see the changes reflected without a reload.
 
-## Import a database by default
-
-If you have a mysql dump of a database you'd like installed, place it in the `Docker/data/db` directory. It will automatically be imported when docker starts. This process only happens once. If you want to re-import the dump, you must reset your container by running `vendor/bin/whr start`
-
-### Hot module replacement entry points
+### Entry points limitation
 
 Currently, this package only supports HMR for a single entry point per page. This means that if you have multiple entry points on a single page, only the first entry point will be hot reloaded. You can by all means have as many entry points as you like, but only the first one will benefit from HMR.
 
 In development, I recommend having a single entry point per page so that you can take advantage of the fast paced development experience of HMR, and then use a separate config for your production environment. This can easily be faciliated with separate `whr.json` files, according to your environment.
+
+## Import a database by default
+
+If you have a mysql dump of a database you'd like installed, place it in the `Docker/data/db` directory. To rebuild the container with this dump file imported, run `vendor/bin/whr start --reset`. Make sure your dump file uses the database `wp_database`.
+
+**_If you want to use a different database name, you'll need to change it in the `compsoe.yml` file, found in your project root. Search for all references to `wp_database` and replace it with the database name of your choice._**
 
 ## Configuration (whr.json)
 
@@ -129,7 +131,7 @@ An array of script objects. Each script object contains the following properties
 }
 ```
 
-### Adding a new asset
+### Adding a new asset / HMR entry point
 
 To add a new asset, simply add a new object to the `assets` array in the `whr.json` file. You will have to run `vendor/bin/whr build` to generate the necessary asset files.
 
@@ -232,7 +234,7 @@ You can find the page template slug by looking at the classname of the body tag 
 // for default page template
   {
         "handle": "pages-feature-image",
-        "path": "/js/templates/pages-feature-image.js",
+        "path": "/js/templates/pages-feature-image",
         "ext": "js",
 
         "condition": ["get_page_template_slug", null, "page-template-default"]
