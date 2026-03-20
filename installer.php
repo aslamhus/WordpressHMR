@@ -27,6 +27,15 @@ try {
             $installer->scaffoldChildTheme();
             break;
 
+        /**
+         * Copy functions.php from active theme to resources 
+         * and add require enqueue-assets line.
+         * This is necessary when we switch themes (see whr syncTheme in utils.sh)
+         */
+        case '--copy-functions':
+            $installer->copyFunctions();
+            break;
+
         default:
             $installer->install();
     }

@@ -199,7 +199,7 @@ class Install
      * @param string $this->root
      * @return void
      */
-    private static function addEnqueueAssetsToFunctions()
+    public static function addEnqueueAssetsToFunctions()
     {
         // find active theme
         $functionsPath = 'resources/functions.php';
@@ -208,8 +208,15 @@ class Install
         }
         $functions = file_get_contents($functionsPath);
         $enqueueLine = "/** Enqueue Custom Theme Assets */ " . PHP_EOL . "require_once  get_stylesheet_directory() . '/inc/enqueue-assets.php';";
+        // append the line only if it doesn't already exist
         if (strpos($functions, $enqueueLine) === false) {
-            file_put_contents($functionsPath, $functions . PHP_EOL . $enqueueLine);
+            // if functions.php has a closing php tag, prepend the line to it, otherwise append it
+            if (strpos($functions, "?>") !== false) {
+                $functions = str_replace("?>", $enqueueLine . PHP_EOL . "?>", $functions);
+            } else {
+                $functions .=   PHP_EOL . $enqueueLine;
+            }
+            file_put_contents($functionsPath, $functions);
         }
     }
 
@@ -228,11 +235,10 @@ class Install
     /**
      * Either copy child theme or parent theme files to resources, depending on installation type
      */
-    private function copyActiveThemeFilesToResources()
+    public function copyActiveThemeFilesToResources()
     {
         $activeThemePath = $this->getActiveThemePath();
         $resourcesPath = $this->root . DIRECTORY_SEPARATOR . 'resources';
-
         CLI::log("Copying functions.php to resources directory: cp $activeThemePath/functions.php $resourcesPath/functions.php");
         exec("cp $activeThemePath/functions.php resources/functions.php");
     }
@@ -263,6 +269,19 @@ class Install
         $output = [];
         if (!CLI::exec('build', $output)) {
             throw new \Exception('Build failed:' . implode('\n', $output));
+        }
+    }
+
+    /**
+     * Copy functions.php from active theme to resources 
+     * and add require enqueue-assets line.
+     * This is necessary when we switch themes (see whr syncTheme in utils.sh)
+     */
+    public function copyFunctions()
+    {
+        if (CLI::confirm('Copy functions.php from active theme to resources? This will overwrite resources/functions.php')) {
+            $this->copyActiveThemeFilesToResources();
+            $this->addEnqueueAssetsToFunctions();
         }
     }
 }

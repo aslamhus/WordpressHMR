@@ -76,10 +76,7 @@ syncTheme() {
 		printf " 2. %s (whr.json)\n" "${whr_theme}"
 		theme=""
 		promptForTheme
-		if activateTheme "${theme}" >/dev/null 2>&1; then
-			updateWHRJsonTheme "${theme}"
-			echo "Activated '${theme}' in wordpress and whr.json "
-		else
+		if ! activateTheme "${theme}"; then
 			echo "Failed to activate theme"
 			return 1
 		fi
@@ -98,4 +95,17 @@ promptForTheme() {
 		return
 	fi
 
+}
+
+# Activate theme
+# 1. activate theme in wordpress
+# 2. update whr.json theme
+# 3. get functions.php from active theme
+activateTheme() {
+	vendor/bin/whr wp --skip-themes --skip-plugins theme activate "$1" || exit 1
+	updateWHRJsonTheme "$1"
+	# copy functions.php
+	echo "Copying functions.php from active theme"
+	php "${PACKAGE_DIR}/installer.php" --copy-functions || exit 1
+	echo "Activated '$1' in wordpress and whr.json"
 }

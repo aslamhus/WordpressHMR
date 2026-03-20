@@ -23,7 +23,3 @@ getWordpressPort() {
 		echo "${url[2]}"
 	)
 }
-
-activateTheme() {
-	vendor/bin/whr wp --skip-themes --skip-plugins theme activate "$1"
-}
