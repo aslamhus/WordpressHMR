@@ -33,9 +33,6 @@ services:
         define('FORCE_SSL_ADMIN', false );
         define('WP_DEBUG_LOG', true);
         define('WP_DEBUG_DISPLAY',true);
-        ini_set('display_errors', true);
-        ini_set('display_startup_errors', true);
-        error_reporting(E_ALL);
 
     depends_on:
       - db
