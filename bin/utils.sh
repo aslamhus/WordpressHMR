@@ -77,7 +77,7 @@ syncTheme() {
 		theme=""
 		promptForTheme
 		if activateTheme "${theme}" >/dev/null 2>&1; then
-			updateWHRJsonTheme "{$theme}"
+			updateWHRJsonTheme "${theme}"
 			echo "Activated '${theme}' in wordpress and whr.json "
 		else
 			echo "Failed to activate theme"
