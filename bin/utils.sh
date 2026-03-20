@@ -64,13 +64,38 @@ updateWHRJsonTheme() {
 
 syncTheme() {
 	echo "Syncing whr.json theme"
+
 	whr_theme=$(getWHRJsonTheme)
 	active_theme=$(getActiveTheme)
 	if [[ "${whr_theme}" != "${active_theme}" ]]; then
-		echo "Theme in whr.json does not match active theme. Activating ${whr_theme}"
-		if ! activateTheme "${whr_theme}"; then
+
+		theme_list=($(getThemes))
+		echo "Theme in whr.json does not match active theme."
+		echo "Which theme do you want to use?"
+		printf " 1. %s (active)\n" "${active_theme}"
+		printf " 2. %s (whr.json)\n" "${whr_theme}"
+		theme=""
+		promptForTheme
+		if activateTheme "${theme}" >/dev/null 2>&1; then
+			updateWHRJsonTheme "{$theme}"
+			echo "Activated '${theme}' in wordpress and whr.json "
+		else
 			echo "Failed to activate theme"
 			return 1
 		fi
 	fi
+}
+
+promptForTheme() {
+	# $1 - the list of available themes
+	read -r -p "Type theme:" theme
+	if ! echo "${theme_list[*]}" | grep -q "${theme}"; then
+		echo "Invalid theme. Choose from the available themes:"
+		for i in "${theme_list[@]}"; do
+			printf "  - %s\n" "$i"
+		done
+		promptForTheme
+		return
+	fi
+
 }
