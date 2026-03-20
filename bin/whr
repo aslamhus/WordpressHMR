@@ -8,6 +8,7 @@ else
 fi
 PACKAGE_DIR="${BIN_DIR}/../aslamhus/wordpress-hmr"
 export PACKAGE_DIR
+
 source "${PACKAGE_DIR}/bin/wordpress.sh"
 source "${PACKAGE_DIR}/bin/utils.sh"
 source "${PACKAGE_DIR}/bin/docker.sh"
@@ -110,8 +111,12 @@ start() {
 	if ! "${r}"; then
 		startDocker || exit 1
 	else
-		reset
-		startDocker --build || exit 1
+		echo "Are you sure you want to reset the container? This will wipe the database and rebuild all containers."
+		read -r -p "[y/n]" confirmReset
+		if [[ "${confirmReset}" == 'y' ]]; then
+			reset
+			startDocker --build || exit 1
+		fi
 	fi
 	if "${h}"; then
 		startWebpack
@@ -168,7 +173,7 @@ startDocker() {
 	fi
 
 	# check if db exists and install
-	if ! main wp core is-installed 2>/dev/null || [[ "$build" == 'build' ]]; then
+	if ! main wp core is-installed 2>/dev/null; then
 		echo "Core installing now"
 		sleep 2
 		coreInstall || exit 1
@@ -280,7 +285,7 @@ wp() {
 		exit 1
 	)
 
-	docker exec "${container}" wp "$@"
+	docker exec "${container}" wp --skip-themes --skip-plugins "$@"
 }
 
 # execute commands in the wordpress container
