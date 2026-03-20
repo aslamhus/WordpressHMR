@@ -19,7 +19,7 @@ use Aslamhus\WordpressHMR\CLI;
  * none: installs
  * 
  */
-$option = $argv[1] ?? [];
+$option = $argv[1] ?? "";
 $installer = new Install(getcwd());
 try {
     switch ($option) {
