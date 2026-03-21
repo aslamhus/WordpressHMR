@@ -89,7 +89,10 @@ module.exports = {
             from: path.resolve(WORKING_DIR, resourcesPath),
             to: outputPath,
             globOptions: {
-              ignore: ["**/js/**", "**/scss/**", "**/node_modules/**"],
+              ignore: [
+                `${WORKING_DIR}/resources/js`,
+                `${WORKING_DIR}/resources/assets`,
+              ],
             },
           },
         ],
