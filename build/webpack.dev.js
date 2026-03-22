@@ -10,7 +10,7 @@ const WORKING_DIR = process.env.WORKING_DIR;
 
 const whrJson = require(`${WORKING_DIR}/whr.json`);
 const { theme, themePath } = whrJson.config;
-// create proxy i.e. http://local.coryweeds:8888
+// create proxy i.e. http://localhost:8888
 const { host, port, protocol } = whrJson.config;
 const proxy = `${protocol || "http"}://${host}${port ? `:${port}` : ""}`;
 console.log("WORKING_DIR", WORKING_DIR);
