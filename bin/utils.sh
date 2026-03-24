@@ -9,7 +9,7 @@ getWHRJson() {
 }
 
 # Get the working directory (where the script is run, base folder)
-getWorkingDirectoryName() {
+getWorkingDirName() {
 	wdir=$(basename "$PWD")
 	echo "$wdir" | tr '[:upper:]' '[:lower:]'
 }
@@ -30,8 +30,8 @@ updateWordpressPort() {
 	[[ "$new_port" == "$current_port" ]] && return
 	# if there is a discrepancy between the new port and the old wordpress port, update it
 	# 1. replace old port with new
-	vendor/bin/whr search-replace "http://localhost:$current_port" "http://localhost:$new_port"
-	vendor/bin/whr search-replace "http:\/\/localhost:$current_port" "http:\/\/localhost:$new_port"
+	vendor/bin/whr wp search-replace --all-tables --recurse-objects "http://localhost:$current_port" "http://localhost:$new_port"
+	vendor/bin/whr wp search-replace --all-tables --recurse-objects "http:\/\/localhost:$current_port" "http:\/\/localhost:$new_port"
 	# 2. update the site url / home
 	vendor/bin/whr wp option set siteurl "http://localhost:$new_port"
 	vendor/bin/whr wp option set home "http://localhost:$new_port"

@@ -12,13 +12,24 @@ export PACKAGE_DIR
 source "${PACKAGE_DIR}/bin/wordpress.sh"
 source "${PACKAGE_DIR}/bin/utils.sh"
 source "${PACKAGE_DIR}/bin/docker.sh"
-WORKING_DIR_NAME=$(getWorkingDirectoryName)
+WORKING_DIR_NAME=$(getWorkingDirName)
+# shellcheck disable=SC2034
+DOCKER_CONTAINER_NAME=$(getDockerWorkingDirName)
+
 WORKING_DIR=$PWD
 export WORKING_DIR
 
 main() {
 	checkForDocker || exit
 	case "$1" in
+
+	"info")
+		help
+		;;
+
+	"help")
+		help
+		;;
 
 	"install")
 		install
@@ -111,12 +122,8 @@ start() {
 	if ! "${r}"; then
 		startDocker || exit 1
 	else
-		echo "Are you sure you want to reset the container? This will wipe the database and rebuild all containers."
-		read -r -p "[y/n]" confirmReset
-		if [[ "${confirmReset}" == 'y' ]]; then
-			reset
-			startDocker --build || exit 1
-		fi
+		reset
+		startDocker --build || exit 1
 	fi
 	if "${h}"; then
 		startWebpack
@@ -125,6 +132,10 @@ start() {
 		open "http://localhost:${WHR_PORT}"
 	fi
 
+}
+
+help() {
+	cat "${PACKAGE_DIR}/bin/usage.txt"
 }
 
 printStartUsage() {

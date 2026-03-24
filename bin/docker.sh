@@ -13,20 +13,27 @@ getDockerContainer() {
 	# note: workingdir is assigned in whr.sh as base name for containers (i.e. myproject-wpcli or myproject-wordpress)
 	# we need to use grep becasue depending on the number of open containers, a number may be assigned to the container name
 	# shellcheck disable=SC2154
-	container=$(docker container ls | grep "${WORKING_DIR_NAME}-$1")
+	container=$(docker container ls | grep "${DOCKER_CONTAINER_NAME}-$1")
 	if [[ -z "$container" ]]; then
-		echo "failed to find docker container ${WORKING_DIR_NAME}-$1"
+		echo "failed to find docker container ${DOCKER_CONTAINER_NAME}-$1"
 		return 1
 	fi
 	echo "$container"
 
 }
 
+# Note: docker container name restricted to alphanumeric and hyphens
+# Restricted characters @see https://github.com/moby/moby/blob/be97c66708c24727836a22247319ff2943d91a03/daemon/names/names.go
+getDockerWorkingDirName() {
+	echo "${WORKING_DIR_NAME}" | sed 's/[^a-zA-Z0-9-]//g' | tr '[:upper:]' '[:lower:]'
+}
+
 getDockerContainerName() {
 	local name=""
-	name=$(docker container ls --format "{{.Names}}" | grep "${WORKING_DIR_NAME}-$1")
+
+	name=$(docker container ls --format "{{.Names}}" | grep "${DOCKER_CONTAINER_NAME}-$1")
 	if [[ -z "$name" ]]; then
-		echo "Failed to find docker container ${WORKING_DIR_NAME}-$1. Please start your container"
+		echo "Failed to find docker container ${DOCKER_CONTAINER_NAME}-$1. Please start your container"
 		return 1
 	fi
 	echo "$name"
@@ -43,14 +50,14 @@ getDockerContainerPort() {
 
 isDockerPortAvailable() {
 	# get all containers, except current container
-	if docker container ls | grep -v "$WORKING_DIR_NAME" | grep "$1" -q; then
+	if docker container ls | grep -v "${DOCKER_CONTAINER_NAME}" | grep "$1" -q; then
 		return 1
 	fi
 	return 0
 }
 
 isContainerRunning() {
-	if ! docker container ls | grep "$WORKING_DIR_NAME" -q; then
+	if ! docker container ls | grep "${DOCKER_CONTAINER_NAME}" -q; then
 		return 1
 	fi
 }
