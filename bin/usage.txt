@@ -1,0 +1,85 @@
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║              WordPress HMR (Hot Module Replacement) Tool                   ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+USAGE: whr [COMMAND] [OPTIONS]
+
+COMMANDS:
+  
+  help, info
+    Display this help message
+  
+  install
+    Run the PHP installer to set up the project
+  
+  start [OPTIONS]
+    Start Docker container and optionally webpack
+    
+    OPTIONS:
+      --hot       Start webpack hot module replacement server
+      --open      Automatically open WordPress in browser
+      --reset     Wipe database and reinstall WordPress core
+    
+    EXAMPLES:
+      whr start
+      whr start --open
+      whr start --hot
+  
+  stop
+    Stop the Docker container
+  
+  clean
+    Remove all containers, images, and volumes
+    ⚠️  WARNING: This will delete all data
+  
+  destroy
+    Stop and remove containers, delete volumes
+    ⚠️  WARNING: This will delete all container data and destroy images
+  
+  build
+    Build webpack assets and enqueue assets in WordPress
+    Runs webpack production build and asset compilation
+  
+  create-child-theme
+    Scaffold a new child theme
+  
+  wp [WP-CLI ARGS]
+    Execute WP-CLI commands inside the container
+    
+    EXAMPLES:
+      whr wp plugin list
+      whr wp user list
+      whr wp post create --post_type=post --post_status=publish
+  
+  exec [COMMAND]
+    Execute arbitrary commands inside the WordPress container
+    
+    EXAMPLES:
+      whr exec bash -c 'cd ../ && ls -1'
+      whr exec php -v
+      whr exec ls -la /var/www/html
+  
+
+COMMON WORKFLOWS:
+
+  Initial Setup:
+    $ whr install
+    $ whr start
+
+  Development:
+    $ whr start --hot
+    (Code changes will automatically reload via hot module replacement)
+
+  Database Reset:
+    $ whr start --reset
+
+  Stop Development:
+    $ whr stop
+
+  Full Cleanup:
+    $ whr clean
+
+  Check WordPress Status:
+    $ whr wp core is-installed
+    $ whr wp option get siteurl
