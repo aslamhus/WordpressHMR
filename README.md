@@ -371,6 +371,26 @@ services:
 
 ```
 
+### Adding files to your wordpress container
+
+By default, only your `wp-content` directory is mounted in the container. It is the bridge between your local project and the container. If you'd like to mount another file in the container, you can add it in your `compose.yml` file.
+
+For example, say you wanted to add your own `.htaccess` file. Add it to your public directory and then edit your `compose.yml` file to include it as a volume:
+
+```yml
+services:
+  wordpress:
+    volumes:
+      # htaccess
+      - ./public/.htaccess:/var/www/html/.htaccess
+      # Note: docker splits the volume string by a the colon (:)
+      # You specify the path to your file / directory you'd like to mount,
+      # followed by location in the container.
+      # /var/www/html is where your wordpress site lives.
+```
+
+**_WARNING: Be careful adding a file like `wp-config.php` since the wordpress Docker image uses a specific `wp-config.php` with its own logic for setting environment variables._**
+
 ## Troubleshooting
 
 ### Webpack Errors
@@ -388,6 +408,17 @@ If you aren't seeing changes in your wordpress reflected in your site, try:
 ```php
 /** Enqueue Custom Theme Assets */
  require_once  get_stylesheet_directory() . '/inc/enqueue-assets.php';
+```
+
+### Wordpress Errors
+
+#### Can't login to my admin
+
+Here's where the `whr` command line tool comes in handy. Simply add a new user with administrator privileges to login:
+
+```bash
+vendor/bin/whr wp user create admin admin@example.com --role=administrator
+# a password will be generated for you. Now you can log in!
 ```
 
 ### Container
