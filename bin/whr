@@ -283,7 +283,7 @@ buildWebpack() {
 
 # Build Enqueue Assets
 buildEnqueueAssets() {
-	if ! execContainer wordpress bash -c "php ../vendor/aslamhus/wordpress-hmr build.php"; then
+	if ! execContainer wordpress bash -c "php ../vendor/aslamhus/wordpress-hmr/build.php"; then
 		return 1
 	fi
 }
