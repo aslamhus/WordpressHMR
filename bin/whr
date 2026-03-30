@@ -202,6 +202,7 @@ startDocker() {
 }
 
 startWebpack() {
+	installNodeModulesIfNecessary
 	(
 		cd "${PACKAGE_DIR}" || exit
 		# enable webpack to access WORKING_DIR global
@@ -273,17 +274,18 @@ build() {
 # Build webpack
 # but it outputs to the volume inside the container
 buildWebpack() {
-	cd vendor/aslamhus/wordpress-hmr || exit 1
+	installNodeModulesIfNecessary
 	if ! npx wp-scripts build --webpack-src-dir="$WORKING_DIR/resources" --config build/webpack.prod.js; then
 		echo "Failed to run wp-scripts build"
 		exit 1
 	fi
-	cd "$WORKING_DIR" || exit 1
 }
 
 # Build Enqueue Assets
 buildEnqueueAssets() {
-	if ! execContainer wordpress bash -c "php ../vendor/aslamhus/wordpress-hmr/build.php"; then
+	if
+		! execContainer wordpress bash -c "php ../vendor/aslamhus/wordpress-hmr/build.php 2>/dev/null"
+	then
 		return 1
 	fi
 }

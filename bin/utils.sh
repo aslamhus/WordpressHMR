@@ -109,3 +109,23 @@ activateTheme() {
 	php "${PACKAGE_DIR}/installer.php" --copy-functions || exit 1
 	echo "Activated '$1' in wordpress and whr.json"
 }
+
+areNodeModulesInstalled() {
+	(
+		cd "${PACKAGE_DIR}" || exit
+		# enable webpack to access WORKING_DIR global
+		# npm list --silent /dev/null 2>&1
+		npm ls --silent &>/dev/null
+	)
+
+}
+
+installNodeModulesIfNecessary() {
+	if ! areNodeModulesInstalled; then
+		echo "installing node modules..."
+		(
+			cd "${PACKAGE_DIR}" || exit
+			npm install --silent
+		)
+	fi
+}
