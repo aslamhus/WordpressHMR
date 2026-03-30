@@ -129,3 +129,8 @@ installNodeModulesIfNecessary() {
 		)
 	fi
 }
+
+hasInstalled() {
+	# check for whr.json
+	[[ -f whr.json ]] || return 1
+}

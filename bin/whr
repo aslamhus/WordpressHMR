@@ -91,6 +91,10 @@ createChildTheme() {
 # Start
 # starts docker and webpack
 start() {
+	if ! hasInstalled; then
+		echo "‼️ whr.json file is missing. Please run vendor/bin/whr install"
+		exit 1
+	fi
 	h=false
 	o=false
 	r=false
