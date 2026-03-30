@@ -1,12 +1,22 @@
 # Wordpress Development setup with HMR and WP-Scripts
 
+## Features
+
+- Hot module replacement (HMR) for theme development (no CSS reloads!)
+- Containerized WordPress environment with Docker
+- Simple whr.json config for defining, conditionally enqueuing, and managing all theme assets
+- Optimized production builds via wp-scripts with statically generated asset enqueuing
+- Child theme scaffolding, WP-CLI, and PHPMyAdmin included out of the box
+- One-command setup — `vendor/bin/whr install` gets a full containerized WP site running from scratch
+- CLI tool — run WP-CLI commands, manage containers, and scaffold themes without touching Docker directly
+
 ## Introduction
 
 This is an experimental package inspired by `wp-env`, which allows you to develop containerized wordpress sites with `Docker`, `Webpack` and `hot module replacement (HMR)`. It uses the Wordpress `wp-scripts` package in tandem with a custom enqueuing algorithm to enqueue assets in your theme.
 
 WordpressHMR now comes with a CLI tool that allows you to spin up a containerized wordpress site with one command.
 
-Defining and enqueuing assets is as simple as managing a single `whr.json` file. This file contains the configuration for your assets, including the path to your scripts and styles, the hooks where they should be enqueued, and any conditions for enqueuing them.
+Defining and enqueuing assets is as simple as managing a single `whr.json` (**W**ordpress **Hot** module **R**eplacement) file. This file contains the configuration for your assets, including the path to your scripts and styles, the hooks where they should be enqueued, and any conditions for enqueuing them.
 
 ## Who is this package for?
 
@@ -53,25 +63,25 @@ vendor/bin/whr start
 vendor/bin/whr start --hot
 ```
 
-That's it! Try changing the css in your `resources/assets/screen.scss` file to see the changes immediately reflected in your browser. By default, the package adds two scripts to your theme, `screen.js` and `editor.js`. Each of these scripts is defined in the `whr.json` file with conditions to enqueue them in the public facing area of your wordpress site nd editor respectively. Each script imports a correspdonding css file in your theme. Add more scripts or more css / scss files as you like. Try updating the css and see the changes reflected without a reload.
+That's it! Try changing the css in your `resources/assets/screen.scss` file to see the changes immediately reflected in your browser. By default, the package adds two scripts to your theme, `screen.js` and `editor.js`. Each of these scripts is defined in the `whr.json` file with conditions to enqueue them in the public facing area of your wordpress site nd editor respectively. Each script imports a corresponding css file in your theme. Add more scripts or more css / scss files as you like. Try updating the css and see the changes reflected without a reload.
 
-### Entry points limitation
+### Webpack HMR Entry points limitation
 
-Currently, this package only supports HMR for a single entry point per page. This means that if you have multiple entry points on a single page, only the first entry point will be hot reloaded. You can by all means have as many entry points as you like, but only the first one will benefit from HMR.
+This package supports multiple entry points, however HMR will only work with one entry point per page. This is a known issue with `Webpack HMR` when multiple entry points are loaded on the same page.
 
-In development, I recommend having a single entry point per page so that you can take advantage of the fast paced development experience of HMR, and then use a separate config for your production environment. This can easily be faciliated with separate `whr.json` files, according to your environment.
+In development, I recommend having a single entry point per page so that you can take advantage of the fast paced development experience of HMR, and then use a separate config for your production environment. This can easily be facilitated with separate `whr.json` files, according to your environment.
 
 ## Import a database by default
 
 If you have a mysql dump of a database you'd like installed, place it in the `Docker/data/db` directory. To rebuild the container with this dump file imported, run `vendor/bin/whr start --reset`. Make sure your dump file uses the database `wp_database`.
 
-**_If you want to use a different database name, you'll need to change it in the `compsoe.yml` file, found in your project root. Search for all references to `wp_database` and replace it with the database name of your choice._**
+**_If you want to use a different database name, you'll need to change it in the `compose.yml` file, found in your project root. Search for all references to `wp_database` and replace it with the database name of your choice._**
 
 ## Configuration (whr.json)
 
-The `whr.json` file (**W**ordpress **Hot** module **R**eplacement) is where you define assets.
+The `whr.json` file is where you define assets.
 
-It is a simple JSON configurationfile that contains the following properties:
+It is a simple JSON configuration file that contains the following properties:
 
 - `config` - This is where you define the configuration for your assets.
 - `assets` - This is where you define your scripts. Each property of the `assets` object is a hook where you want to enqueue your script. The value of each property is an array of script objects.
@@ -395,7 +405,7 @@ services:
 
 ### Webpack Errors
 
-If you encounter an error such as `Module parse failed: 'import' and 'export' may appear only with 'sourceType: module'`, please make sure your root directory of your project does not contain a package.json file where the type is set to "commonjs". While `aslamhus/wordpress-hmr` uses ES6 syntax for its webpack configuration, `wp-scripts` uses CommonJS and specifiying a type can cause errors.
+If you encounter an error such as `Module parse failed: 'import' and 'export' may appear only with 'sourceType: module'`, please make sure your root directory of your project does not contain a package.json file where the type is set to "commonjs". While `aslamhus/wordpress-hmr` uses ES6 syntax for its webpack configuration, `wp-scripts` uses CommonJS and specifying a type can cause errors.
 
 ### HMR isn't working
 
@@ -421,11 +431,9 @@ vendor/bin/whr wp user create admin admin@example.com --role=administrator
 # a password will be generated for you. Now you can log in!
 ```
 
-### Container
-
 ### Modifying the Webpack configurations
 
-You'll find tall he webpack config files in the `vendor/aslamhus/wordpress-hmr/build`.
+You'll find all the webpack config files in the `vendor/aslamhus/wordpress-hmr/build`.
 
 ## Contributing
 
