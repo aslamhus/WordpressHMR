@@ -53,8 +53,11 @@ console.log("Output path:", outputPath);
 const index = defaultConfig.plugins.findIndex(
   (o) => o.constructor.name === "CleanWebpackPlugin",
 );
-// potential to add CleanWebpackPlugin back with custom config
-let [CleanWebpackPlugin] = defaultConfig.plugins.splice(index, 1);
+// Note: wp-scripts is no longer using clean webpack plugin, so we can remove this in later versions
+if (index > -1) {
+  // potential to add CleanWebpackPlugin back with custom config
+  let [CleanWebpackPlugin] = defaultConfig.plugins.splice(index, 1);
+}
 
 let publicPath = `/wp-content/themes/${theme}/`;
 module.exports = {
