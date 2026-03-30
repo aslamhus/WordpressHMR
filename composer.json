@@ -3,7 +3,7 @@
   "description": "HMR setup with webpack and wp-scripts for wordpress development and production",
   "type": "library",
   "license": "MIT",
-  "version": "3.0.14",
+  "version": "3.0.15",
   "autoload": {
     "psr-4": {
       "Aslamhus\\WordpressHMR\\": "src/"

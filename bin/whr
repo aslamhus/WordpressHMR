@@ -279,10 +279,12 @@ build() {
 # but it outputs to the volume inside the container
 buildWebpack() {
 	installNodeModulesIfNecessary
+	cd "$PACKAGE_DIR"
 	if ! npx wp-scripts build --webpack-src-dir="$WORKING_DIR/resources" --config build/webpack.prod.js; then
 		echo "Failed to run wp-scripts build"
 		exit 1
 	fi
+	cd "$WORKING_DIR"
 }
 
 # Build Enqueue Assets
